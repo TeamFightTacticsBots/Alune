@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alune"
+version = "0.0.1"
+authors = [
+  {name = "akshualy"},
+  {name = "Detergent13"},
+  {name = "Kyrluckechuck"},
+]
+description = "Teamfight Tactics (TFT) bot for the mobile version, to farm events/tokens."
+readme = "README.md"
+requires-python = ">= 3.12"
+dependencies = [
+    "adb-shell==0.4.4"
+]
+
+[project.urls]
+Repository = "https://github.com/TeamFightTacticsBots/Alune.git"
+"Bug Tracker" = "https://github.com/TeamFightTacticsBots/Alune/issues"

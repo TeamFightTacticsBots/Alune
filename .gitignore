@@ -1,0 +1,14 @@
+# Editor files
+.idea/
+
+# Environments
+alune-venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+build/
