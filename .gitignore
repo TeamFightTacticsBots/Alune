@@ -12,3 +12,6 @@ __pycache__/
 # Distribution / packaging
 *.egg-info/
 build/
+
+# Project specific files
+adb_key*
