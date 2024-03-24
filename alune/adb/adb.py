@@ -1,8 +1,11 @@
 import os.path
 
+import cv2
+import numpy
 from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
+from numpy import ndarray
 
 
 class ADB:
@@ -51,3 +54,32 @@ class ADB:
         # It's an actual shell, so we can use the usual linux shell commands
         memory_kilobytes = int(self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'"))
         return memory_kilobytes // 1000
+
+    def get_screen(self) -> ndarray | None:
+        """
+        Gets a ndarray which contains the values of the gray-scaled pixels
+        currently on the screen.
+
+        Returns:
+            The ndarray containing the gray-scaled pixels.
+        """
+        image_bytes_str = self._device.shell("screencap -p", decode=False)
+        raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
+        return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
+
+    def click(self, x: int, y: int):
+        """
+        Tap a specific coordinate.
+
+        Args:
+            x: The x coordinate where to tap.
+            y: The y coordinate where to tap.
+        """
+        self._device.shell(f"input tap {x} {y}")
+
+    def go_back(self):
+        """
+        Utility method to fulfill the action which goes back one screen,
+        however the current app might interpret that.
+        """
+        self._device.shell(f"input tap keyevent KEYCODE_BACK")

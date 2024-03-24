@@ -14,7 +14,9 @@ description = "Teamfight Tactics (TFT) bot for the mobile version, to farm event
 readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
-    "adb-shell[async]==0.4.4"
+    "adb-shell[async]==0.4.4",
+    "numpy==1.26.4",
+    "opencv-python==4.9.0.80"
 ]
 
 [project.urls]
