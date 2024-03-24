@@ -1,5 +1,6 @@
-import cv2
+from time import sleep
 
+from alune import screen
 from alune.adb import ADB
 
 
@@ -22,7 +23,15 @@ def main():
         print("Tft is not active, starting it")
         adb_instance.start_tft_app()
 
-    print("Tft is started, ready to proceed")
+    print("Tft is started, waiting for play button")
+    screenshot = adb_instance.get_screen()
+    search_result = screen.get_on_screen(image=screenshot, path="alune/images/play_button.png")
+    while not search_result:
+        sleep(5)
+        screenshot = adb_instance.get_screen()
+        search_result = screen.get_on_screen(image=screenshot, path="alune/images/play_button.png")
+        print("Still waiting for the play button...")
+    print("Play button found, ready to start a match")
 
 
 if __name__ == '__main__':
