@@ -33,6 +33,11 @@ class ADB:
             self._device = None
 
     def get_screen_size(self) -> str | None:
+        # wm commands:
+        # wm size - get size ('Physical size: WIDTHxHEIGHT\n')
+        # wm size WIDTHxHEIGHT - set size
+        # wm density - get pixel density ('Physical density: DENSITY\n')
+        # wm density DENSITY - set pixel density, the smaller the size, the smaller the density should be
         if not self._device or not self._device.available:
             return None
 
