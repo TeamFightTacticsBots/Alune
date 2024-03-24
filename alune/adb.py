@@ -10,6 +10,8 @@ from numpy import ndarray
 
 class ADB:
     def __init__(self):
+        self._tft_package_name = "com.riotgames.league.teamfighttactics"
+        self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
         self._load_rsa_signer()
         self._connect_to_device()
 
@@ -35,25 +37,33 @@ class ADB:
         except OSError:
             self._device = None
 
-    def get_screen_size(self) -> str | None:
-        # wm commands:
-        # wm size - get size ('Physical size: WIDTHxHEIGHT\n')
-        # wm size WIDTHxHEIGHT - set size
-        # wm density - get pixel density ('Physical density: DENSITY\n')
-        # wm density DENSITY - set pixel density, the smaller the size, the smaller the density should be
-        if not self._device or not self._device.available:
-            return None
+    def is_connected(self) -> bool:
+        """
+        Get if this adb instance is connected.
 
-        size: str = self._device.shell("wm size | awk '{print $3}'").replace("\n", "")
-        return size
+        Returns:
+             True if a device exists and is available. Otherwise, False.
+        """
+        return self._device is not None and self._device.available
 
-    def get_memory_in_mb(self) -> int | None:
-        if not self._device or not self._device.available:
-            return None
+    def get_screen_size(self) -> tuple[int, int] | None:
+        """
+        Get the screen size.
 
-        # It's an actual shell, so we can use the usual linux shell commands
-        memory_kilobytes = int(self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'"))
-        return memory_kilobytes // 1000
+        Returns:
+             A tuple containing the width and height.
+        """
+        sizes = self._device.shell("wm size | awk '{print $3}'").replace("\n", "").split("x")
+        return int(sizes[0]), int(sizes[1])
+
+    def get_memory(self) -> int | None:
+        """
+        Gets the memory of the device.
+
+        Returns:
+            The memory of the device in kB.
+        """
+        return int(self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'"))
 
     def get_screen(self) -> ndarray | None:
         """
@@ -82,4 +92,12 @@ class ADB:
         Utility method to fulfill the action which goes back one screen,
         however the current app might interpret that.
         """
-        self._device.shell(f"input tap keyevent KEYCODE_BACK")
+        self._device.shell("input tap keyevent KEYCODE_BACK")
+
+    def is_tft_active(self) -> bool:
+        return self._device.shell(
+            "dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'"
+        ).split("/")[0].replace("\n", "") == self._tft_package_name
+
+    def start_tft_app(self):
+        self._device.shell(f"am start -n {self._tft_package_name}/{self._tft_activity_name}")
