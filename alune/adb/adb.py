@@ -41,5 +41,13 @@ class ADB:
         if not self._device or not self._device.available:
             return None
 
-        size: str = self._device.shell("wm size")
-        return size.split(" ")[-1].replace("\n", "")
+        size: str = self._device.shell("wm size | awk '{print $3}'").replace("\n", "")
+        return size
+
+    def get_memory_in_mb(self) -> int | None:
+        if not self._device or not self._device.available:
+            return None
+
+        # It's an actual shell, so we can use the usual linux shell commands
+        memory_kilobytes = int(self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'"))
+        return memory_kilobytes // 1000
