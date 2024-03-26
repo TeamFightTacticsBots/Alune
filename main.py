@@ -65,10 +65,8 @@ def main():
     adb_instance.click_image(search_result, offset_y=10)
     sleep(10)
 
-    print("Clicking play in post game screen")
-    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png")
-    if search_result:
-        adb_instance.click_image(search_result)
+    print("Going back from end screen to main menu")
+    adb_instance.go_back()
     print("Exited, ready to loop again")
 
 
