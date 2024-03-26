@@ -2,6 +2,7 @@ from time import sleep
 
 from alune import screen
 from alune.adb import ADB
+from alune.screen import BoundingBox
 
 
 def main():
@@ -27,15 +28,66 @@ def main():
         adb_instance.start_tft_app()
 
     print("Tft is started, waiting for play button")
-    screenshot = adb_instance.get_screen()
-    search_result = screen.get_on_screen(image=screenshot, path="alune/images/play_button.png")
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png")
     while not search_result:
         sleep(5)
-        screenshot = adb_instance.get_screen()
-        search_result = screen.get_on_screen(image=screenshot, path="alune/images/play_button.png")
+        search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png")
         print("Still waiting for the play button...")
     print("Play button found, ready to start a match")
-    adb_instance.click_image(search_result=search_result)
+    adb_instance.click_image(search_result)
+    sleep(2)
+
+    print("Creating a normal game lobby")
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/normal_game.png")
+    if not search_result:
+        print("Could not find normal game button")
+        return
+    adb_instance.click_image(search_result)
+    sleep(2)
+
+    print("Clicking play in the lobby")
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png")
+    if not search_result:
+        print("Could not find play button")
+        return
+    adb_instance.click_image(search_result)
+    sleep(2)
+
+    print("Queue started, waiting for accept button")
+    queue(adb_instance)
+
+    print("Match started, waiting for exit button")
+    sleep(300)
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/exit_now.png", BoundingBox(520, 400, 775, 425))
+    while not search_result:
+        sleep(60)
+        search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/exit_now.png", BoundingBox(520, 400, 775, 425))
+    adb_instance.click_image(search_result, offset_y=10)
+    sleep(10)
+
+    print("Clicking play in post game screen")
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png")
+    if search_result:
+        adb_instance.click_image(search_result)
+    print("Exited, ready to loop again")
+
+
+def queue(adb_instance: ADB):
+    search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/accept.png")
+    while not search_result:
+        sleep(2)
+        search_result = screen.get_on_screen(adb_instance.get_screen(), "alune/images/accept.png")
+    adb_instance.click_image(search_result, offset_y=10)
+    sleep(2)
+
+    print("Match accepted")
+    while screen.get_on_screen(adb_instance.get_screen(), "alune/images/accepted.png"):
+        sleep(1)
+
+    sleep(2)
+    if screen.get_on_screen(adb_instance.get_screen(), "alune/images/play_button.png"):
+        print("Queue got declined by someone, waiting for accept button again")
+        queue(adb_instance)
 
 
 if __name__ == '__main__':

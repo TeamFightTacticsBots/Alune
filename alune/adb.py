@@ -81,22 +81,24 @@ class ADB:
         raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
         return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
 
-    def click_image(self, search_result: ImageSearchResult, randomize: bool = True):
+    def click_image(self, search_result: ImageSearchResult, offset_y: int = 0, randomize: bool = True):
         """
         Tap a specific coordinate.
 
         Args:
             search_result: The image search result to click.
+            offset_y: Amount of pixels to offset Y by, useful if we search for part of buttons
+                to avoid having text on screenshots.
             randomize: Whether to randomize the click position in the image. Defaults to True.
         """
         if randomize:
             x = self._random.randint(search_result.x, search_result.x + search_result.width)
-            y = self._random.randint(search_result.y, search_result.y + search_result.width)
+            y = self._random.randint(search_result.y, search_result.y + search_result.height)
         else:
             x = search_result.get_middle().x
             y = search_result.get_middle().y
 
-        self.click(x, y)
+        self.click(x, y + offset_y)
 
     def click(self, x: int, y: int):
         """
