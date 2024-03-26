@@ -20,6 +20,9 @@ def main():
         print("Your phone has less than 4GB of memory, you may experience lags.")
 
     if not adb_instance.is_tft_active():
+        if not adb_instance.is_tft_installed():
+            print("TFT is not installed, please install it to continue. Exiting.")
+            return
         print("Tft is not active, starting it")
         adb_instance.start_tft_app()
 

@@ -94,6 +94,9 @@ class ADB:
         """
         self._device.shell("input tap keyevent KEYCODE_BACK")
 
+    def is_tft_installed(self) -> bool:
+        return self._device.shell(f"pm list packages {self._tft_package_name}") != ''
+
     def is_tft_active(self) -> bool:
         return self._device.shell(
             "dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'"
