@@ -1,4 +1,5 @@
 import os.path
+import random
 
 import cv2
 import numpy
@@ -7,6 +8,8 @@ from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from numpy import ndarray
 
+from alune.screen import ImageSearchResult
+
 
 class ADB:
     def __init__(self):
@@ -14,6 +17,7 @@ class ADB:
         self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
         self._load_rsa_signer()
         self._connect_to_device()
+        self._random = random.Random()
 
     def _load_rsa_signer(self) -> None:
         if not os.path.isfile("adb_key"):
@@ -76,6 +80,23 @@ class ADB:
         image_bytes_str = self._device.shell("screencap -p", decode=False)
         raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
         return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
+
+    def click_image(self, search_result: ImageSearchResult, randomize: bool = True):
+        """
+        Tap a specific coordinate.
+
+        Args:
+            search_result: The image search result to click.
+            randomize: Whether to randomize the click position in the image. Defaults to True.
+        """
+        if randomize:
+            x = self._random.randint(search_result.x, search_result.x + search_result.width)
+            y = self._random.randint(search_result.y, search_result.y + search_result.width)
+        else:
+            x = search_result.get_middle().x
+            y = search_result.get_middle().y
+
+        self.click(x, y)
 
     def click(self, x: int, y: int):
         """

@@ -35,6 +35,7 @@ def main():
         search_result = screen.get_on_screen(image=screenshot, path="alune/images/play_button.png")
         print("Still waiting for the play button...")
     print("Play button found, ready to start a match")
+    adb_instance.click_image(search_result=search_result)
 
 
 if __name__ == '__main__':
