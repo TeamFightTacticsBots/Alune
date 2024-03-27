@@ -3,7 +3,7 @@ import random
 
 import cv2
 import numpy
-from adb_shell.adb_device import AdbDeviceTcp
+from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from numpy import ndarray
@@ -15,11 +15,18 @@ class ADB:
     def __init__(self):
         self._tft_package_name = "com.riotgames.league.teamfighttactics"
         self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
-        self._load_rsa_signer()
-        self._connect_to_device()
         self._random = random.Random()
+        self._loaded = False
 
-    def _load_rsa_signer(self) -> None:
+    async def load(self):
+        if self._loaded:
+            raise RuntimeError("This ADB instance has already been loaded.")
+
+        self._loaded = True
+        await self._load_rsa_signer()
+        await self._connect_to_device()
+
+    async def _load_rsa_signer(self) -> None:
         if not os.path.isfile("adb_key"):
             keygen("adb_key")
 
@@ -31,14 +38,15 @@ class ADB:
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
 
-    def _connect_to_device(self):
+    async def _connect_to_device(self):
         # TODO Make port configurable (GUI or config.yml) or add port discovery
-        device = AdbDeviceTcp(host='127.0.0.1', port=5555, default_transport_timeout_s=9)
+        device = AdbDeviceTcpAsync(host='localhost', port=5555, default_transport_timeout_s=9)
         try:
-            if device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=0.1):
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
+            if connection:
                 self._device = device
                 return
-        except OSError:
+        except OSError as e:
             self._device = None
 
     def is_connected(self) -> bool:
@@ -50,26 +58,28 @@ class ADB:
         """
         return self._device is not None and self._device.available
 
-    def get_screen_size(self) -> tuple[int, int] | None:
+    async def get_screen_size(self) -> tuple[int, int] | None:
         """
         Get the screen size.
 
         Returns:
              A tuple containing the width and height.
         """
-        sizes = self._device.shell("wm size | awk '{print $3}'").replace("\n", "").split("x")
+        shell_output = await self._device.shell("wm size | awk '{print $3}'")
+        sizes = shell_output.replace("\n", "").split("x")
         return int(sizes[0]), int(sizes[1])
 
-    def get_memory(self) -> int | None:
+    async def get_memory(self) -> int | None:
         """
         Gets the memory of the device.
 
         Returns:
             The memory of the device in kB.
         """
-        return int(self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'"))
+        shell_output = await self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'")
+        return int(shell_output)
 
-    def get_screen(self) -> ndarray | None:
+    async def get_screen(self) -> ndarray | None:
         """
         Gets a ndarray which contains the values of the gray-scaled pixels
         currently on the screen.
@@ -77,11 +87,11 @@ class ADB:
         Returns:
             The ndarray containing the gray-scaled pixels.
         """
-        image_bytes_str = self._device.shell("screencap -p", decode=False)
+        image_bytes_str = await self._device.shell("screencap -p", decode=False)
         raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
         return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
 
-    def click_image(self, search_result: ImageSearchResult, offset_y: int = 0, randomize: bool = True):
+    async def click_image(self, search_result: ImageSearchResult, offset_y: int = 0, randomize: bool = True):
         """
         Tap a specific coordinate.
 
@@ -98,9 +108,9 @@ class ADB:
             x = search_result.get_middle().x
             y = search_result.get_middle().y
 
-        self.click(x, y + offset_y)
+        await self.click(x, y + offset_y)
 
-    def click(self, x: int, y: int):
+    async def click(self, x: int, y: int):
         """
         Tap a specific coordinate.
 
@@ -108,22 +118,36 @@ class ADB:
             x: The x coordinate where to tap.
             y: The y coordinate where to tap.
         """
-        self._device.shell(f"input tap {x} {y}")
+        await self._device.shell(f"input tap {x} {y}")
 
-    def go_back(self):
+    async def go_back(self):
         """
         Utility method to fulfill the action which goes back one screen,
         however the current app might interpret that.
         """
-        self._device.shell("input tap keyevent KEYCODE_BACK")
+        await self._device.shell("input tap keyevent KEYCODE_BACK")
 
-    def is_tft_installed(self) -> bool:
-        return self._device.shell(f"pm list packages {self._tft_package_name}") != ''
+    async def is_tft_installed(self) -> bool:
+        """
+        Check if TFT is installed on the device.
 
-    def is_tft_active(self) -> bool:
-        return self._device.shell(
+        Returns:
+            Whether the TFT package is in the list of the installed packages.
+        """
+        shell_output = await self._device.shell(f"pm list packages {self._tft_package_name}")
+        return shell_output != ''
+
+    async def is_tft_active(self) -> bool:
+        """
+        Check if TFT is the currently active window.
+
+        Returns:
+             Whether TFT is the currently active window.
+        """
+        shell_output = await self._device.shell(
             "dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'"
-        ).split("/")[0].replace("\n", "") == self._tft_package_name
+        )
+        return shell_output.split("/")[0].replace("\n", "") == self._tft_package_name
 
-    def start_tft_app(self):
-        self._device.shell(f"am start -n {self._tft_package_name}/{self._tft_activity_name}")
+    async def start_tft_app(self):
+        await self._device.shell(f"am start -n {self._tft_package_name}/{self._tft_activity_name}")
