@@ -41,7 +41,7 @@ async def queue(adb_instance: ADB):
         await asyncio.sleep(2)
         screenshot = await adb_instance.get_screen()
         search_result = screen.get_on_screen(screenshot, Image.accept)
-    await adb_instance.click_image(search_result, offset_y=10)
+    await adb_instance.click_bounding_box(BoundingBox(520, 515, 760, 550))
     await asyncio.sleep(2)
 
     print("Match accepted")
@@ -84,10 +84,10 @@ async def loop(adb_instance: ADB):
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_on_screen(screenshot, Image.exit_now, BoundingBox(520, 400, 775, 425))
                 while not search_result:
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_on_screen(screenshot, Image.exit_now, BoundingBox(520, 400, 775, 425))
-                await adb_instance.click_bounding_box(BoundingBox(540, 420, 750, 450))
+                await adb_instance.click_bounding_box(BoundingBox(550, 425, 740, 440))
                 await asyncio.sleep(10)
             case GameState.post_game:
                 print("Match concluded, clicking Play again")
