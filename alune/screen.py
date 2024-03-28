@@ -1,7 +1,38 @@
 from dataclasses import dataclass
+from random import Random
 
 import cv2
 from numpy import ndarray
+
+
+@dataclass
+class Coordinate:
+    """
+    Class to represent a coordinate on the screen.
+    """
+
+    x: int
+    y: int
+
+    def clone(self):
+        """
+        Get a clone of the coordinate, safe for modification.
+
+        Returns:
+            The cloned coordinate.
+        """
+        return Coordinate(x=self.x, y=self.y)
+
+    def add(self, x: int, y: int):
+        """
+        Add the given values to the current coordinates.
+
+        Returns:
+             The modified coordinate object.
+        """
+        self.x += x
+        self.y += y
+        return self
 
 
 @dataclass
@@ -44,35 +75,17 @@ class BoundingBox:
         """
         return self.max_y - self.min_y
 
-
-@dataclass
-class Coordinate:
-    """
-    Class to represent a coordinate on the screen.
-    """
-
-    x: int
-    y: int
-
-    def clone(self):
+    def get_random_point(self, random: Random) -> Coordinate:
         """
-        Get a clone of the coordinate, safe for modification.
+        Get a random point within this bounding box.
+
+        Args:
+            random: An instance of Random to be used.
 
         Returns:
-            The cloned coordinate.
+            A random coordinate within the bounding box.
         """
-        return Coordinate(x=self.x, y=self.y)
-
-    def add(self, x: int, y: int):
-        """
-        Add the given values to the current coordinates.
-
-        Returns:
-             The modified coordinate object.
-        """
-        self.x += x
-        self.y += y
-        return self
+        return Coordinate(random.randint(self.min_x, self.max_x), random.randint(self.min_y, self.max_y))
 
 
 @dataclass
@@ -107,6 +120,8 @@ def get_on_screen(
     Returns:
         The position of the image and it's width and height or None if it wasn't found
     """
+    path = "alune/images/" + path + ".png"
+
     image_to_find = cv2.imread(path, 0)
     if image_to_find is None:
         print(

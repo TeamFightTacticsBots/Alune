@@ -8,7 +8,7 @@ from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from numpy import ndarray
 
-from alune.screen import ImageSearchResult
+from alune.screen import ImageSearchResult, BoundingBox
 
 
 class ADB:
@@ -46,7 +46,7 @@ class ADB:
             if connection:
                 self._device = device
                 return
-        except OSError as e:
+        except OSError:
             self._device = None
 
     def is_connected(self) -> bool:
@@ -58,18 +58,39 @@ class ADB:
         """
         return self._device is not None and self._device.available
 
-    async def get_screen_size(self) -> tuple[int, int] | None:
+    async def get_screen_size(self) -> str:
         """
         Get the screen size.
 
         Returns:
-             A tuple containing the width and height.
+             A string containing 'WIDTHxHEIGHT'.
         """
         shell_output = await self._device.shell("wm size | awk '{print $3}'")
-        sizes = shell_output.replace("\n", "").split("x")
-        return int(sizes[0]), int(sizes[1])
+        return shell_output.replace("\n", "")
 
-    async def get_memory(self) -> int | None:
+    async def get_screen_density(self) -> str:
+        """
+        Get the screen density.
+
+        Returns:
+             A string containing the pixel density.
+        """
+        shell_output = await self._device.shell("wm density | awk '{print $3}'")
+        return shell_output.replace("\n", "")
+
+    async def set_screen_size(self):
+        """
+        Set the screen size to 1280x720.
+        """
+        await self._device.shell("wm size 1280x720")
+
+    async def set_screen_density(self):
+        """
+        Set the screen pixel density to 240.
+        """
+        await self._device.shell("wm density 240")
+
+    async def get_memory(self) -> int:
         """
         Gets the memory of the device.
 
@@ -110,6 +131,16 @@ class ADB:
 
         await self.click(x, y + offset_y)
 
+    async def click_bounding_box(self, bounding_box: BoundingBox):
+        """
+        Tap a specific coordinate.
+
+        Args:
+            bounding_box: The bounding box in which to click.
+        """
+        random_coordinate = bounding_box.get_random_point(self._random)
+        await self.click(random_coordinate.x, random_coordinate.y)
+
     async def click(self, x: int, y: int):
         """
         Tap a specific coordinate.
@@ -119,13 +150,6 @@ class ADB:
             y: The y coordinate where to tap.
         """
         await self._device.shell(f"input tap {x} {y}")
-
-    async def go_back(self):
-        """
-        Utility method to fulfill the action which goes back one screen,
-        however the current app might interpret that.
-        """
-        await self._device.shell("input tap keyevent KEYCODE_BACK")
 
     async def is_tft_installed(self) -> bool:
         """
