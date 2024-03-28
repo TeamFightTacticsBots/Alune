@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from enum import StrEnum, auto
+from random import Random
 
 from numpy import ndarray
 
@@ -72,6 +73,39 @@ async def queue(adb_instance: ADB):
         await queue(adb_instance)
 
 
+_random = Random()
+
+
+async def temporary_game_loop(adb_instance: ADB):
+    # 50% chance at leveling up per 'tick'
+    if bool(_random.getrandbits(1)):
+        await adb_instance.click_bounding_box(BoundingBox(45, 600, 110, 680))
+        await asyncio.sleep(2)
+
+    # 10% chance to buy unit one in the shop
+    if _random.randint(1, 10) == 10:
+        await adb_instance.click_bounding_box(BoundingBox(175, 45, 370, 225))
+        await asyncio.sleep(2)
+
+    # 10% chance to buy unit two in the shop
+    if _random.randint(1, 10) == 10:
+        await adb_instance.click_bounding_box(BoundingBox(400, 45, 580, 255))
+        await asyncio.sleep(2)
+
+    # You get the idea
+    if _random.randint(1, 10) == 10:
+        await adb_instance.click_bounding_box(BoundingBox(620, 45, 810, 255))
+        await asyncio.sleep(2)
+
+    if _random.randint(1, 10) == 10:
+        await adb_instance.click_bounding_box(BoundingBox(840, 45, 1030, 255))
+        await asyncio.sleep(2)
+
+    if _random.randint(1, 10) == 10:
+        await adb_instance.click_bounding_box(BoundingBox(1070, 45, 1250, 255))
+        await asyncio.sleep(2)
+
+
 async def loop(adb_instance: ADB):
     while True:
         screenshot = await adb_instance.get_screen()
@@ -101,6 +135,7 @@ async def loop(adb_instance: ADB):
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_on_screen(screenshot, Image.exit_now, BoundingBox(520, 400, 775, 425))
                 while not search_result:
+                    await temporary_game_loop(adb_instance)
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_on_screen(screenshot, Image.exit_now, BoundingBox(520, 400, 775, 425))
