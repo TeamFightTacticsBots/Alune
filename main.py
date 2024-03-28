@@ -14,6 +14,7 @@ class GameState(StrEnum):
     main_menu = auto()
     choose_mode = auto()
     lobby = auto()
+    queue_missed = auto()
     in_game = auto()
     post_game = auto()
 
@@ -25,12 +26,17 @@ class Image(StrEnum):
     close_lobby = auto()
     accept = auto()
     accepted = auto()
+    check = auto()
     composition = auto()
     items = auto()
     exit_now = auto()
     first_place = auto()
     back = auto()
     settings = auto()
+
+
+async def click_play(adb_instance: ADB):
+    await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
 
 
 async def queue(adb_instance: ADB):
@@ -51,7 +57,16 @@ async def queue(adb_instance: ADB):
         screenshot = await adb_instance.get_screen()
 
     await asyncio.sleep(3)
+
     screenshot = await adb_instance.get_screen()
+    search_result = screen.get_on_screen(screenshot, Image.check)
+    if search_result:
+        print("We accidentally missed the queue")
+        await adb_instance.click_image(search_result)
+        await asyncio.sleep(2)
+        await click_play(adb_instance)
+        await queue(adb_instance)
+
     if screen.get_on_screen(screenshot, Image.play):
         print("Queue got declined by someone")
         await queue(adb_instance)
@@ -69,12 +84,14 @@ async def loop(adb_instance: ADB):
                 await asyncio.sleep(10)
             case GameState.main_menu:
                 print("TFT is loaded, opening mode choice")
-                await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
+                await click_play(adb_instance)
             case GameState.choose_mode:
                 print("Selecting normal game")
                 await adb_instance.click_bounding_box(BoundingBox(50, 250, 275, 580))
+            case GameState.queue_missed:
+                await adb_instance.click_bounding_box(BoundingBox(555, 425, 725, 470))
             case GameState.lobby:
-                await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
+                await click_play(adb_instance)
                 await queue(adb_instance)
                 # TODO When we want to move to actually doing something in the game,
                 #  we need GameState.game_loading
@@ -91,12 +108,12 @@ async def loop(adb_instance: ADB):
                 await asyncio.sleep(10)
             case GameState.post_game:
                 print("Match concluded, clicking Play again")
-                await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
+                await click_play(adb_instance)
 
         await asyncio.sleep(2)
 
 
-async def get_game_state(screenshot: ndarray) -> GameState:
+async def get_game_state(screenshot: ndarray) -> GameState | None:
     if screen.get_on_screen(screenshot, Image.rito_logo):
         return GameState.loading
 
@@ -105,6 +122,9 @@ async def get_game_state(screenshot: ndarray) -> GameState:
 
     if screen.get_on_screen(screenshot, Image.normal_game):
         return GameState.choose_mode
+
+    if screen.get_on_screen(screenshot, Image.check):
+        return GameState.queue_missed
 
     if screen.get_on_screen(screenshot, Image.close_lobby) and screen.get_on_screen(screenshot, Image.play):
         return GameState.lobby
