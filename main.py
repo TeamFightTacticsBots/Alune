@@ -189,6 +189,9 @@ async def loop(adb_instance: ADB):
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_on_screen(screenshot, Image.exit_now, BoundingBox(520, 400, 775, 425))
+                    game_state = await get_game_state(screenshot)
+                    if game_state == GameState.post_game:
+                        break
                 await adb_instance.click_bounding_box(BoundingBox(550, 425, 740, 440))
                 await asyncio.sleep(10)
             case GameState.post_game:
