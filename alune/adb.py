@@ -149,7 +149,9 @@ class ADB:
             x: The x coordinate where to tap.
             y: The y coordinate where to tap.
         """
-        await self._device.shell(f"input tap {x} {y}")
+        # input tap x y comes with the downtime of tapping too fast for the game sometimes,
+        # so we swipe on the same coordinate to simulate a longer press with a random duration.
+        await self._device.shell(f"input swipe {x} {y} {x} {y} {self._random.randint(40, 120)}")
 
     async def is_tft_installed(self) -> bool:
         """
