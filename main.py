@@ -1,5 +1,7 @@
 import asyncio
 import sys
+import time
+from contextlib import contextmanager
 from enum import StrEnum, auto
 from random import Random
 
@@ -36,18 +38,63 @@ class Image(StrEnum):
     settings = auto()
 
 
+@contextmanager
+def timeout(seconds: int):
+    """
+    Context manager that times a function or with-context out after a given time.
+
+    Args:
+        seconds: number of seconds before this raises a TimeoutError
+
+    Raises:
+        TimeoutError
+    """
+    start_time = time.time()
+    yield
+    elapsed_seconds = time.time() - start_time
+    if elapsed_seconds > seconds:
+        raise TimeoutError()
+
+
 async def click_play(adb_instance: ADB):
+    """
+    Utility method to click within the play button boundary box.
+
+    Args:
+        adb_instance: An instance of the ADB connection to click in.
+    """
     await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
 
 
-async def queue(adb_instance: ADB):
-    print("Queue started, waiting for accept button")
+@timeout(120)
+async def wait_for_accept_button(adb_instance: ADB):
+    """
+    Utility method to wait for the queue accept button.
+
+    Args:
+        adb_instance: An instance of the ADB connection to click in.
+    """
     screenshot = await adb_instance.get_screen()
     search_result = screen.get_on_screen(screenshot, Image.accept)
     while not search_result:
         await asyncio.sleep(2)
         screenshot = await adb_instance.get_screen()
         search_result = screen.get_on_screen(screenshot, Image.accept)
+
+
+async def queue(adb_instance: ADB):
+    """
+    Utility method to queue a match.
+
+    Args:
+        adb_instance: An instance of the ADB connection to click in.
+    """
+    print("Queue started, waiting for accept button")
+    try:
+        await wait_for_accept_button(adb_instance)
+    except TimeoutError:
+        print("Waiting for accept button took longer than 120 seconds, checking state again")
+        return
     await adb_instance.click_bounding_box(BoundingBox(520, 515, 760, 550))
     await asyncio.sleep(2)
 
@@ -62,7 +109,7 @@ async def queue(adb_instance: ADB):
     screenshot = await adb_instance.get_screen()
     search_result = screen.get_on_screen(screenshot, Image.check)
     if search_result:
-        print("We accidentally missed the queue")
+        print("We missed the queue")
         await adb_instance.click_image(search_result)
         await asyncio.sleep(2)
         await click_play(adb_instance)
@@ -107,6 +154,12 @@ async def temporary_game_loop(adb_instance: ADB):
 
 
 async def loop(adb_instance: ADB):
+    """
+    The main app loop logic.
+
+    Args:
+        adb_instance: An instance of the ADB connection to click in.
+    """
     while True:
         screenshot = await adb_instance.get_screen()
         game_state = await get_game_state(screenshot)
@@ -127,9 +180,6 @@ async def loop(adb_instance: ADB):
             case GameState.lobby:
                 await click_play(adb_instance)
                 await queue(adb_instance)
-                # TODO When we want to move to actually doing something in the game,
-                #  we need GameState.game_loading
-                await asyncio.sleep(300)
             case GameState.in_game:
                 print("Match is active, waiting for the exit button")
                 screenshot = await adb_instance.get_screen()
@@ -149,6 +199,12 @@ async def loop(adb_instance: ADB):
 
 
 async def get_game_state(screenshot: ndarray) -> GameState | None:
+    """
+    Get the current app/game state based off a screenshot.
+
+    Args:
+        screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
+    """
     if screen.get_on_screen(screenshot, Image.rito_logo):
         return GameState.loading
 
