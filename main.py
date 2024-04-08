@@ -248,6 +248,9 @@ async def check_phone_preconditions(adb_instance: ADB):
 
     if not await adb_instance.is_tft_active():
         if not await adb_instance.is_tft_installed():
+            # TODO Avoid Google Play (add README warning for Google Play interruptions) and install from
+            #  https://www.apkmirror.com/apk/riot-games-inc/teamfight-tactics-league-of-legends-strategy-game/
+            #  Note, this also needs a functionality to update check (Does the app tell us? Parse from site?)
             print("TFT is not installed, please install it to continue. Exiting.")
             sys.exit(1)
 
