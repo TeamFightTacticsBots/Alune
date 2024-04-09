@@ -161,6 +161,10 @@ async def loop(adb_instance: ADB):
         adb_instance: An instance of the ADB connection to click in.
     """
     while True:
+        if not await adb_instance.is_tft_active():
+            print("TFT is not in the foreground anymore, setting it back to active.")
+            await adb_instance.start_tft_app()
+
         screenshot = await adb_instance.get_screen()
         game_state = await get_game_state(screenshot)
 
@@ -266,6 +270,7 @@ async def main():
         return
 
     await check_phone_preconditions(adb_instance)
+    print("Phone ready, starting main loop")
 
     await loop(adb_instance)
 
