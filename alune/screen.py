@@ -105,7 +105,7 @@ def get_on_screen(
     image: ndarray,
     path: str,
     bounding_box: BoundingBox | None = None,
-    precision: float = 0.9,
+    precision: float = 0.8,
 ) -> ImageSearchResult | None:
     """
     Check if a given image is detected on screen in a specific window's area.
