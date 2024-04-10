@@ -23,12 +23,10 @@ class GameState(StrEnum):
     post_game = auto()
 
 
-class ImagePathGenerator(StrEnum):
+class Image(StrEnum):
     def _generate_next_value_(name, start, count, last_values):
         return "alune/images/" + name + ".png"
 
-
-class Image(ImagePathGenerator):
     rito_logo = auto()
     play = auto()
     normal_game = auto()
@@ -44,12 +42,10 @@ class Image(ImagePathGenerator):
     settings = auto()
 
 
-class TraitPathGenerator(StrEnum):
+class Trait(StrEnum):
     def _generate_next_value_(name, start, count, last_values):
         return "alune/images/traits/" + name + ".png"
 
-
-class Trait(TraitPathGenerator):
     heavenly = auto()
 
 
