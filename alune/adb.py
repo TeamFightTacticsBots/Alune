@@ -65,7 +65,7 @@ class ADB:
         Returns:
              A string containing 'WIDTHxHEIGHT'.
         """
-        shell_output = await self._device.shell("wm size | awk '{print $3}'")
+        shell_output = await self._device.shell("wm size | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def get_screen_density(self) -> str:
@@ -75,7 +75,7 @@ class ADB:
         Returns:
              A string containing the pixel density.
         """
-        shell_output = await self._device.shell("wm density | awk '{print $3}'")
+        shell_output = await self._device.shell("wm density | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def set_screen_size(self):
