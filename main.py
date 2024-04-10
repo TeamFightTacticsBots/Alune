@@ -1,7 +1,6 @@
 import asyncio
 import sys
 import time
-from contextlib import contextmanager
 from enum import StrEnum, auto
 from random import Random
 
@@ -61,24 +60,6 @@ class Trait(StrEnum):
     heavenly = auto()
 
 
-@contextmanager
-def timeout(seconds: int):
-    """
-    Context manager that times a function or with-context out after a given time.
-
-    Args:
-        seconds: number of seconds before this raises a TimeoutError
-
-    Raises:
-        TimeoutError
-    """
-    start_time = time.time()
-    yield
-    elapsed_seconds = time.time() - start_time
-    if elapsed_seconds > seconds:
-        raise TimeoutError()
-
-
 async def click_play(adb_instance: ADB):
     """
     Utility method to click within the play button boundary box.
@@ -89,7 +70,6 @@ async def click_play(adb_instance: ADB):
     await adb_instance.click_bounding_box(BoundingBox(950, 600, 1200, 650))
 
 
-@timeout(120)
 async def wait_for_accept_button(adb_instance: ADB):
     """
     Utility method to wait for the queue accept button.
@@ -114,8 +94,8 @@ async def queue(adb_instance: ADB):
     """
     print("Queue started, waiting for accept button")
     try:
-        await wait_for_accept_button(adb_instance)
-    except TimeoutError:
+        await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=120)
+    except asyncio.TimeoutError:
         print("Waiting for accept button took longer than 120 seconds, checking state again")
         return
     await adb_instance.click_bounding_box(BoundingBox(520, 515, 760, 550))
