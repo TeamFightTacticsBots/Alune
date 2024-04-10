@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from enum import StrEnum, auto
 from random import Random
 
+from adb_shell.exceptions import TcpTimeoutException
 from numpy import ndarray
 
 from alune import screen
@@ -144,13 +145,16 @@ async def temporary_game_loop(adb_instance: ADB):
         await adb_instance.click_bounding_box(BoundingBox(620, 45, 810, 255))
         await asyncio.sleep(2)
 
-    if _random.randint(1, 20) == 20:
-        await adb_instance.click_bounding_box(BoundingBox(840, 45, 1030, 255))
-        await asyncio.sleep(2)
-
-    if _random.randint(1, 20) == 20:
-        await adb_instance.click_bounding_box(BoundingBox(1070, 45, 1250, 255))
-        await asyncio.sleep(2)
+async def loop_disconnect_wrapper(adb_instance: ADB):
+    try:
+        await loop(adb_instance)
+    except TcpTimeoutException:
+        print("Device disconnected, attempting reconnect...")
+        await adb_instance.load()
+        if not adb_instance.is_connected():
+            print("Could not reconnect. Please check your emulator for any errors. Exiting.")
+            sys.exit(1)
+        await loop_disconnect_wrapper(adb_instance)
 
 
 async def loop(adb_instance: ADB):
@@ -272,7 +276,7 @@ async def main():
     await check_phone_preconditions(adb_instance)
     print("Phone ready, starting main loop")
 
-    await loop(adb_instance)
+    await loop_disconnect_wrapper(adb_instance)
 
 
 if __name__ == '__main__':

@@ -16,13 +16,8 @@ class ADB:
         self._tft_package_name = "com.riotgames.league.teamfighttactics"
         self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
         self._random = random.Random()
-        self._loaded = False
 
     async def load(self):
-        if self._loaded:
-            raise RuntimeError("This ADB instance has already been loaded.")
-
-        self._loaded = True
         await self._load_rsa_signer()
         await self._connect_to_device()
 
