@@ -23,7 +23,12 @@ class GameState(StrEnum):
     post_game = auto()
 
 
-class Image(StrEnum):
+class ImagePathGenerator(StrEnum):
+    def _generate_next_value_(name, start, count, last_values):
+        return "alune/images/" + name + ".png"
+
+
+class Image(ImagePathGenerator):
     rito_logo = auto()
     play = auto()
     normal_game = auto()
@@ -37,6 +42,15 @@ class Image(StrEnum):
     first_place = auto()
     back = auto()
     settings = auto()
+
+
+class TraitPathGenerator(StrEnum):
+    def _generate_next_value_(name, start, count, last_values):
+        return "alune/images/traits/" + name + ".png"
+
+
+class Trait(TraitPathGenerator):
+    heavenly = auto()
 
 
 @contextmanager
@@ -130,20 +144,17 @@ async def temporary_game_loop(adb_instance: ADB):
         await adb_instance.click_bounding_box(BoundingBox(45, 600, 110, 680))
         await asyncio.sleep(2)
 
-    # 5% chance to buy unit one in the shop
-    if _random.randint(1, 20) == 20:
-        await adb_instance.click_bounding_box(BoundingBox(175, 45, 370, 225))
-        await asyncio.sleep(2)
+    screenshot = await adb_instance.get_screen()
+    search_result = screen.get_on_screen(
+        image=screenshot,
+        # TODO Make trait configurable
+        path=Trait.heavenly,
+        bounding_box=BoundingBox(170, 110, 1250, 230),
+        precision=0.9,
+    )
+    if search_result:
+        await adb_instance.click_image(search_result)
 
-    # 5% chance to buy unit two in the shop
-    if _random.randint(1, 20) == 20:
-        await adb_instance.click_bounding_box(BoundingBox(400, 45, 580, 255))
-        await asyncio.sleep(2)
-
-    # You get the idea
-    if _random.randint(1, 20) == 20:
-        await adb_instance.click_bounding_box(BoundingBox(620, 45, 810, 255))
-        await asyncio.sleep(2)
 
 async def loop_disconnect_wrapper(adb_instance: ADB):
     try:

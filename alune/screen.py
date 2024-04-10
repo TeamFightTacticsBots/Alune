@@ -120,8 +120,6 @@ def get_on_screen(
     Returns:
         The position of the image and it's width and height or None if it wasn't found
     """
-    path = "alune/images/" + path + ".png"
-
     image_to_find = cv2.imread(path, 0)
     if image_to_find is None:
         print(
@@ -143,8 +141,8 @@ def get_on_screen(
         return None
 
     return ImageSearchResult(
-        x=max_location[0],
-        y=max_location[1],
+        x=max_location[0] + bounding_box.min_x if bounding_box else 0,
+        y=max_location[1] + bounding_box.min_y if bounding_box else 0,
         height=image_to_find.shape[0],
         width=image_to_find.shape[1],
     )
