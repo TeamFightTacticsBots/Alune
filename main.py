@@ -25,6 +25,18 @@ class GameState(StrEnum):
 
 class Image(StrEnum):
     def _generate_next_value_(name, start, count, last_values):
+        """
+        The effective method called by auto().
+
+        Args:
+            name: The name of the enum key.
+            start: Not used in StrEnum.
+            count: Not used in StrEnum.
+            last_values: Not used in StrEnum.
+
+        Returns:
+            The value that the key should have.
+        """
         return "alune/images/" + name + ".png"
 
     rito_logo = auto()
