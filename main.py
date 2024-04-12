@@ -78,11 +78,39 @@ async def queue(adb_instance: ADB):
 _random = Random()
 
 
-async def temporary_game_loop(adb_instance: ADB):
-    # 50% chance at leveling up per 'tick'
-    if bool(_random.getrandbits(1)):
-        await adb_instance.click_bounding_box(BoundingBox(45, 600, 110, 680))
-        await asyncio.sleep(2)
+async def take_game_decision(adb_instance: ADB):
+    screenshot = await adb_instance.get_screen()
+    is_in_carousel = screen.get_on_screen(screenshot, Image.carousel)
+    if is_in_carousel:
+        # Move to a random point in the carousel area
+        await adb_instance.click_bounding_box(BoundingBox(150, 100, 1100, 660))
+        await asyncio.sleep(_random.randint(3, 9))
+        return
+
+    is_on_other_board = screen.get_button_on_screen(screenshot, Button.return_to_board)
+    if is_on_other_board:
+        await adb_instance.click_button(Button.return_to_board)
+        await asyncio.sleep(1)
+        return
+
+    is_augment_offered = screen.get_on_screen(screenshot, Image.pick_augment)
+    if is_augment_offered:
+        # Roll each augment with a 50% chance
+        augment_rolls = Button.get_augment_rolls()
+        for i in range(len(augment_rolls)):
+            if bool(_random.getrandbits(1)):
+                await adb_instance.click_button(augment_rolls[i])
+
+        # Pick a random augment
+        augment = _random.choice(Button.get_augments())
+        await adb_instance.click_button(augment)
+        await asyncio.sleep(1)
+        return
+
+    can_buy_xp = screen.get_button_on_screen(screenshot, Button.buy_xp)
+    if can_buy_xp and bool(_random.getrandbits(1)):
+        await adb_instance.click_button(Button.buy_xp)
+        await asyncio.sleep(1)
 
     screenshot = await adb_instance.get_screen()
     search_result = screen.get_on_screen(
@@ -151,7 +179,7 @@ async def loop(adb_instance: ADB):
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
-                    await temporary_game_loop(adb_instance)
+                    await take_game_decision(adb_instance)
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)

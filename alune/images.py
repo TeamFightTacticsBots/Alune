@@ -225,6 +225,34 @@ class Button:
             cls.store_card_five,
         }
 
+    @classmethod
+    def get_augments(cls):
+        """
+        Utility method to get all three augment buttons.
+
+        Returns:
+            List of all three augment ClickButtons.
+        """
+        return [
+            cls.augment_one,
+            cls.augment_two,
+            cls.augment_three,
+        ]
+
+    @classmethod
+    def get_augment_rolls(cls):
+        """
+        Utility method to get all three augment buttons.
+
+        Returns:
+            List of all three augment ClickButtons.
+        """
+        return [
+            cls.augment_one_roll,
+            cls.augment_two_roll,
+            cls.augment_three_roll,
+        ]
+
 
 # Assigns the variable name of an ImageButton to the image path.
 for name, button in vars(Button).items():
