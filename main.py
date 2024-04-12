@@ -133,7 +133,7 @@ async def take_game_decision(adb_instance: ADB):
         return
 
     can_buy_xp = screen.get_button_on_screen(screenshot, Button.buy_xp)
-    if can_buy_xp and bool(_random.getrandbits(1)):
+    if can_buy_xp and _random.randint(1, 4) == 4:
         logger.debug("Buying XP")
         await adb_instance.click_button(Button.buy_xp)
         await asyncio.sleep(1)
