@@ -125,6 +125,8 @@ class Image(StrEnum):
     first_place = auto()
     back = auto()
     settings = auto()
+    pick_augment = auto()
+    carousel = auto()
 
 
 class Trait(StrEnum):
@@ -190,6 +192,9 @@ class Button:
     exit_now = ImageButton(click_box=BoundingBox(550, 425, 740, 440), capture_area=BoundingBox(520, 400, 775, 425))
     check = ImageButton(BoundingBox(555, 425, 725, 470))
     normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
+    buy_xp = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
+    buy_xp_disabled = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
+    return_to_board = ImageButton(click_box=BoundingBox(1155, 595, 1242, 682))
 
     # Buttons without an image.
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))
@@ -197,7 +202,12 @@ class Button:
     store_card_three = ClickButton(BoundingBox(624, 47, 807, 272))
     store_card_four = ClickButton(BoundingBox(845, 47, 1028, 272))
     store_card_five = ClickButton(BoundingBox(1067, 47, 1250, 272))
-    augment = ClickButton(BoundingBox(530, 140, 760, 510))
+    augment_one = ClickButton(BoundingBox(170, 120, 424, 520))
+    augment_two = ClickButton(BoundingBox(516, 120, 770, 520))
+    augment_three = ClickButton(BoundingBox(863, 120, 1117, 520))
+    augment_one_roll = ClickButton(BoundingBox(266, 602, 323, 659))
+    augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659))
+    augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
 
     @classmethod
     def get_store_cards(cls):
