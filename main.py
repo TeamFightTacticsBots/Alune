@@ -83,7 +83,7 @@ async def take_game_decision(adb_instance: ADB):
     is_in_carousel = screen.get_on_screen(screenshot, Image.carousel)
     if is_in_carousel:
         # Move to a random point in the carousel area
-        await adb_instance.click_bounding_box(BoundingBox(150, 100, 1100, 660))
+        await adb_instance.click_bounding_box(BoundingBox(200, 100, 1100, 660))
         await asyncio.sleep(_random.randint(3, 9))
         return
 
@@ -109,13 +109,13 @@ async def take_game_decision(adb_instance: ADB):
         await asyncio.sleep(1)
         return
 
-    is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden)
+    is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden, precision=0.9)
     if is_choose_one_hidden:
         await adb_instance.click_button(Button.choose_one_hidden)
         await asyncio.sleep(2)
         screenshot = await adb_instance.get_screen()
 
-    is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one)
+    is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one, precision=0.9)
     if is_choose_one_active:
         await adb_instance.click_button(Button.choose_one)
         await asyncio.sleep(1)
