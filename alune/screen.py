@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import cv2
+from loguru import logger
 from numpy import ndarray
 
 from alune.images import Coordinate, BoundingBox, ImageButton
@@ -59,7 +60,7 @@ def get_on_screen(
     """
     image_to_find = cv2.imread(path, 0)
     if image_to_find is None:
-        print(
+        logger.warning(
             f"The image {path} does not exist on the system "
             f"or we do not have permission to read it."
         )

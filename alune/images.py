@@ -223,15 +223,15 @@ class Button:
         Utility method to get all five store card buttons.
 
         Returns:
-             Set of all five store card ClickButtons.
+             List of all five store card ClickButtons.
         """
-        return {
+        return [
             cls.store_card_one,
             cls.store_card_two,
             cls.store_card_three,
             cls.store_card_four,
             cls.store_card_five,
-        }
+        ]
 
     @classmethod
     def get_augments(cls):

@@ -16,7 +16,8 @@ requires-python = ">= 3.12"
 dependencies = [
     "adb-shell[async]==0.4.4",
     "numpy==1.26.4",
-    "opencv-python==4.9.0.80"
+    "opencv-python==4.9.0.80",
+    "loguru==0.7.2",
 ]
 
 [project.urls]
