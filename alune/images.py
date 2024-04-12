@@ -194,7 +194,15 @@ class Button:
     normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
     buy_xp = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
     buy_xp_disabled = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
-    return_to_board = ImageButton(click_box=BoundingBox(1155, 595, 1242, 682))
+    return_to_board = ImageButton(
+        click_box=BoundingBox(1155, 595, 1242, 682), capture_area=BoundingBox(1128, 568, 1269, 709)
+    )
+    choose_one = ImageButton(
+        click_box=BoundingBox(636, 91, 693, 186), capture_area=BoundingBox(1128, 568, 1269, 709)
+    )
+    choose_one_hidden = ImageButton(
+        click_box=BoundingBox(1155, 595, 1242, 682), capture_area=BoundingBox(1128, 568, 1269, 709)
+    )
 
     # Buttons without an image.
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))

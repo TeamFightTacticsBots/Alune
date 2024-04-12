@@ -100,10 +100,24 @@ async def take_game_decision(adb_instance: ADB):
         for i in range(len(augment_rolls)):
             if bool(_random.getrandbits(1)):
                 await adb_instance.click_button(augment_rolls[i])
+            await asyncio.sleep(1)
+        await asyncio.sleep(2)
 
         # Pick a random augment
         augment = _random.choice(Button.get_augments())
         await adb_instance.click_button(augment)
+        await asyncio.sleep(1)
+        return
+
+    is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden)
+    if is_choose_one_hidden:
+        await adb_instance.click_button(Button.choose_one_hidden)
+        await asyncio.sleep(2)
+        screenshot = await adb_instance.get_screen()
+
+    is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one)
+    if is_choose_one_active:
+        await adb_instance.click_button(Button.choose_one)
         await asyncio.sleep(1)
         return
 
