@@ -8,6 +8,7 @@ from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from numpy import ndarray
 
+from alune.images import ClickButton, ImageButton
 from alune.screen import ImageSearchResult, BoundingBox
 
 
@@ -126,9 +127,19 @@ class ADB:
 
         await self.click(x, y + offset_y)
 
+    async def click_button(self, button: ClickButton | ImageButton):
+        """
+        Tap a specific button.
+
+        Args:
+            button: The button to click.
+        """
+        random_coordinate = button.click_box.get_random_point(self._random)
+        await self.click(random_coordinate.x, random_coordinate.y)
+
     async def click_bounding_box(self, bounding_box: BoundingBox):
         """
-        Tap a specific coordinate.
+        Tap a bounding box.
 
         Args:
             bounding_box: The bounding box in which to click.
