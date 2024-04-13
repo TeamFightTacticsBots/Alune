@@ -1,10 +1,15 @@
+"""
+Module for image recognition on the screen.
+"""
 from dataclasses import dataclass
 
 import cv2
 from loguru import logger
 from numpy import ndarray
 
-from alune.images import Coordinate, BoundingBox, ImageButton
+from alune.images import BoundingBox
+from alune.images import Coordinate
+from alune.images import ImageButton
 
 
 @dataclass
@@ -17,6 +22,9 @@ class ImageSearchResult(Coordinate):
     height: int
 
     def get_middle(self):
+        """
+        Get the middle of the image.
+        """
         return Coordinate(self.x + (self.width // 2), self.y + (self.height // 2))
 
 
@@ -60,16 +68,14 @@ def get_on_screen(
     """
     image_to_find = cv2.imread(path, 0)
     if image_to_find is None:
-        logger.warning(
-            f"The image {path} does not exist on the system "
-            f"or we do not have permission to read it."
-        )
+        logger.warning(f"The image {path} does not exist on the system " f"or we do not have permission to read it.")
         return None
 
     crop = image
     if bounding_box:
         crop = image[
-            bounding_box.min_y: bounding_box.max_y, bounding_box.min_x: bounding_box.max_x
+            bounding_box.min_y : bounding_box.max_y,
+            bounding_box.min_x : bounding_box.max_x,
         ]
 
     search_result = cv2.matchTemplate(crop, image_to_find, cv2.TM_CCOEFF_NORMED)

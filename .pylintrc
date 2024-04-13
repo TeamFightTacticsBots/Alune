@@ -1,0 +1,11 @@
+[MASTER]
+extension-pkg-whitelist=cv2
+
+[TYPECHECK]
+generated-members=cv2.*
+
+[MISCELLANEOUS]
+notes=FIXME
+
+[tool.pylint.code_style]
+max-line-length = 120

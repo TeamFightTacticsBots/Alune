@@ -29,6 +29,7 @@ Teamfight Tactics (TFT) bot for the mobile version, to farm events/tokens.
 6. Activate the venv. PowerShell: `alune-venv\Scripts\Activate.ps1`, Zsh/Bash: `alune-venv/bin/activate`  
    This should put `(alune-venv)` in the front of your shell prompt string.
 7. Install the project dependencies: `pip install .`
+   1. If you want to install for a development environment, use `pip install .[lint]`
 
 ## Running
 
@@ -45,3 +46,15 @@ Teamfight Tactics (TFT) bot for the mobile version, to farm events/tokens.
 1. Activate the virtual environment, see setup step 6.  
    If you use PyCharm, you can use the in-built Terminal which does this automatically for you.
 2. Run `python main.py`
+
+## Development
+
+### Linting
+
+The project uses automatic formatting. Please adhere to it by using the following lint commands available to you after installation:
+```bash
+black .
+isort .
+flake8
+pylint main.py alune
+```

@@ -1,42 +1,68 @@
+"""
+Module for all ADB (Android Debug Bridge) related methods.
+"""
 import os.path
 import random
 
-import cv2
-import numpy
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
+import cv2
+import numpy
 from numpy import ndarray
 
-from alune.images import ClickButton, ImageButton
-from alune.screen import ImageSearchResult, BoundingBox
+from alune.images import ClickButton
+from alune.images import ImageButton
+from alune.screen import BoundingBox
+from alune.screen import ImageSearchResult
 
 
 class ADB:
+    """
+    Class to hold the connection to an ADB connection via TCP.
+    USB connection is possible, but not supported at the moment.
+    """
     def __init__(self):
+        """
+        Initiates base values for the ADB instance.
+        """
         self._tft_package_name = "com.riotgames.league.teamfighttactics"
         self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
         self._random = random.Random()
+        self._rsa_signer = None
+        self._device = None
 
     async def load(self):
+        """
+        Load the RSA signer and attempt to connect to a device via ADB TCP.
+        """
         await self._load_rsa_signer()
         await self._connect_to_device()
 
-    async def _load_rsa_signer(self) -> None:
+    async def _load_rsa_signer(self):
+        """
+        Loads the RSA signer needed for TCP connections. Generates a local RSA key pair if none exists.
+        """
+        if self._rsa_signer is not None:
+            return
+
         if not os.path.isfile("adb_key"):
             keygen("adb_key")
 
-        with open("adb_key") as adb_key_file:
+        with open("adb_key", encoding="utf-8") as adb_key_file:
             private_key = adb_key_file.read()
 
-        with open("adb_key.pub") as adb_key_file:
+        with open("adb_key.pub", encoding="utf-8") as adb_key_file:
             public_key = adb_key_file.read()
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
 
     async def _connect_to_device(self):
+        """
+        Connect to the device via TCP.
+        """
         # TODO Make port configurable (GUI or config.yml) or add port discovery
-        device = AdbDeviceTcpAsync(host='localhost', port=5555, default_transport_timeout_s=9)
+        device = AdbDeviceTcpAsync(host="localhost", port=5555, default_transport_timeout_s=9)
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
@@ -108,7 +134,12 @@ class ADB:
         raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
         return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
 
-    async def click_image(self, search_result: ImageSearchResult, offset_y: int = 0, randomize: bool = True):
+    async def click_image(
+        self,
+        search_result: ImageSearchResult,
+        offset_y: int = 0,
+        randomize: bool = True,
+    ):
         """
         Tap a specific coordinate.
 
@@ -161,13 +192,13 @@ class ADB:
 
     async def is_tft_installed(self) -> bool:
         """
-        Check if TFT is installed on the device.
+        Check if TFT is installed on the device using the package manager (pm).
 
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
         shell_output = await self._device.shell(f"pm list packages {self._tft_package_name}")
-        return shell_output != ''
+        return shell_output != ""
 
     async def is_tft_active(self) -> bool:
         """
@@ -176,10 +207,11 @@ class ADB:
         Returns:
              Whether TFT is the currently active window.
         """
-        shell_output = await self._device.shell(
-            "dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'"
-        )
+        shell_output = await self._device.shell("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
         return shell_output.split("/")[0].replace("\n", "") == self._tft_package_name
 
     async def start_tft_app(self):
+        """
+        Start TFT using the activity manager (am).
+        """
         await self._device.shell(f"am start -n {self._tft_package_name}/{self._tft_activity_name}")

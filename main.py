@@ -1,7 +1,12 @@
+"""
+The main class for Alune, responsible for the main loop.
+"""
+
 import asyncio
-import sys
-from enum import StrEnum, auto
+from enum import auto
+from enum import StrEnum
 from random import Random
+import sys
 
 from adb_shell.exceptions import TcpTimeoutException
 from loguru import logger
@@ -9,18 +14,23 @@ from numpy import ndarray
 
 from alune import screen
 from alune.adb import ADB
-from alune.images import Button, Image, Trait
+from alune.images import Button
+from alune.images import Image
+from alune.images import Trait
 from alune.screen import BoundingBox
 
 
 class GameState(StrEnum):
-    loading = auto()
-    main_menu = auto()
-    choose_mode = auto()
-    lobby = auto()
-    queue_missed = auto()
-    in_game = auto()
-    post_game = auto()
+    """
+    State the game or app is in.
+    """
+    LOADING = auto()
+    MAIN_MENU = auto()
+    CHOOSE_MODE = auto()
+    LOBBY = auto()
+    QUEUE_MISSED = auto()
+    IN_GAME = auto()
+    POST_GAME = auto()
 
 
 async def wait_for_accept_button(adb_instance: ADB):
@@ -56,7 +66,7 @@ async def queue(adb_instance: ADB):
 
     logger.debug("Queue accepted")
     screenshot = await adb_instance.get_screen()
-    while screen.get_on_screen(screenshot, Image.accepted):
+    while screen.get_on_screen(screenshot, Image.ACCEPTED):
         await asyncio.sleep(1)
         screenshot = await adb_instance.get_screen()
 
@@ -79,9 +89,75 @@ async def queue(adb_instance: ADB):
 _random = Random()
 
 
-async def take_game_decision(adb_instance: ADB):
+async def handle_augments(screenshot: ndarray, adb_instance: ADB):
+    """
+    Checks for augments on the current screen and picks some if possible.
+
+    Args:
+        screenshot: The current screen.
+        adb_instance: The adb instance to check on.
+    """
+    is_augment_offered = screen.get_on_screen(screenshot, Image.PICK_AUGMENT)
+    if not is_augment_offered:
+        return
+
+    logger.debug("Augments offered")
+    # Roll each augment with a 50% chance
+    augment_rolls = Button.get_augment_rolls()
+    # Randomize order in which we roll
+    _random.shuffle(augment_rolls)
+    for augment in augment_rolls:
+        if bool(_random.getrandbits(1)):
+            logger.debug(f"Rolling augment offer {Button.get_augment_rolls().index(augment) + 1}")
+            await adb_instance.click_button(augment)
+        await asyncio.sleep(1)
+    await asyncio.sleep(2)
+
+    # Pick a random augment
+    augment_idx = _random.randint(0, len(Button.get_augments()) - 1)
+    augment = Button.get_augments()[augment_idx]
+    logger.debug(f"Selecting augment {augment_idx + 1}")
+    await adb_instance.click_button(augment)
+    await asyncio.sleep(1)
+
+
+async def buy_from_shop(adb_instance: ADB):
+    """
+    Checks the shop for traits and purchases it if found.
+
+    Args:
+        adb_instance: The adb instance to check and buy in.
+    """
     screenshot = await adb_instance.get_screen()
-    is_in_carousel = screen.get_on_screen(screenshot, Image.carousel)
+    search_result = screen.get_on_screen(
+        image=screenshot,
+        # TODO Make trait configurable
+        path=Trait.HEAVENLY,
+        bounding_box=BoundingBox(170, 110, 1250, 230),
+        precision=0.9,
+    )
+    if not search_result:
+        return
+
+    store_cards = Button.get_store_cards()
+    _random.shuffle(store_cards)
+    for store_card in store_cards:
+        if not store_card.click_box.is_inside(search_result.get_middle()):
+            continue
+        logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
+        await adb_instance.click_button(store_card)
+        break
+
+
+async def take_game_decision(adb_instance: ADB):
+    """
+    Called by the game loop to take a decision in the current game.
+
+    Args:
+        adb_instance: The adb instance to take the decision in.
+    """
+    screenshot = await adb_instance.get_screen()
+    is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
     if is_in_carousel:
         logger.debug("Is on carousel, clicking a random point within bounds")
         # Move to a random point in the carousel area
@@ -96,27 +172,7 @@ async def take_game_decision(adb_instance: ADB):
         await asyncio.sleep(1)
         return
 
-    is_augment_offered = screen.get_on_screen(screenshot, Image.pick_augment)
-    if is_augment_offered:
-        logger.debug("Augments offered")
-        # Roll each augment with a 50% chance
-        augment_rolls = Button.get_augment_rolls()
-        # Randomize order in which we roll
-        _random.shuffle(augment_rolls)
-        for i in range(len(augment_rolls)):
-            if bool(_random.getrandbits(1)):
-                logger.debug(f"Rolling augment offer {i}")
-                await adb_instance.click_button(augment_rolls[i])
-            await asyncio.sleep(1)
-        await asyncio.sleep(2)
-
-        # Pick a random augment
-        augment_idx = _random.randint(0, len(Button.get_augments()) - 1)
-        augment = Button.get_augments()[augment_idx]
-        logger.debug(f"Selecting augment {augment_idx + 1}")
-        await adb_instance.click_button(augment)
-        await asyncio.sleep(1)
-        return
+    await handle_augments(screenshot, adb_instance)
 
     is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden, precision=0.9)
     if is_choose_one_hidden:
@@ -138,28 +194,17 @@ async def take_game_decision(adb_instance: ADB):
         await adb_instance.click_button(Button.buy_xp)
         await asyncio.sleep(1)
 
-    screenshot = await adb_instance.get_screen()
-    search_result = screen.get_on_screen(
-        image=screenshot,
-        # TODO Make trait configurable
-        path=Trait.heavenly,
-        bounding_box=BoundingBox(170, 110, 1250, 230),
-        precision=0.9,
-    )
-    if not search_result:
-        return
-
-    store_cards = Button.get_store_cards()
-    _random.shuffle(store_cards)
-    for store_card in store_cards:
-        if not store_card.click_box.is_inside(search_result.get_middle()):
-            continue
-        logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
-        await adb_instance.click_button(store_card)
-        break
+    await buy_from_shop(adb_instance)
 
 
 async def loop_disconnect_wrapper(adb_instance: ADB):
+    """
+    Wraps the main loop in a TcpTimeoutException catcher, to catch device disconnects.
+    Attempts to re-connect once, then gives up and exits.
+
+    Args:
+        adb_instance: The adb instance to run the main loop on.
+    """
     try:
         await loop(adb_instance)
     except TcpTimeoutException:
@@ -189,25 +234,25 @@ async def loop(adb_instance: ADB):
         game_state = await get_game_state(screenshot)
 
         match game_state:
-            case GameState.loading:
+            case GameState.LOADING:
                 logger.info("App state is loading...")
                 # TODO Check if the log-in prompt is on screen
                 await asyncio.sleep(10)
-            case GameState.main_menu:
+            case GameState.MAIN_MENU:
                 logger.info("App state is main menu, clicking 'Play'.")
                 await adb_instance.click_button(Button.play)
-            case GameState.choose_mode:
+            case GameState.CHOOSE_MODE:
                 logger.info("App state is choose mode, selecting normal game.")
                 await adb_instance.click_button(Button.normal_game)
-            case GameState.queue_missed:
+            case GameState.QUEUE_MISSED:
                 logger.info("App state is queue missed, clicking it.")
                 await adb_instance.click_button(Button.check)
-            case GameState.lobby:
+            case GameState.LOBBY:
                 logger.info("App state is in lobby, locking bot into queue logic.")
                 await adb_instance.click_button(Button.play)
                 await queue(adb_instance)
                 logger.info("Queue lock released, likely loading into game now.")
-            case GameState.in_game:
+            case GameState.IN_GAME:
                 logger.info("App state is in game, looping decision making and waiting for the exit button.")
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
@@ -217,17 +262,18 @@ async def loop(adb_instance: ADB):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
-                    if game_state == GameState.post_game:
+                    if game_state == GameState.POST_GAME:
                         break
                 await adb_instance.click_button(Button.exit_now)
                 await asyncio.sleep(10)
-            case GameState.post_game:
+            case GameState.POST_GAME:
                 logger.info("App state is post game, clicking 'Play again'.")
                 await adb_instance.click_bounding_box(Button.play.click_box)
 
         await asyncio.sleep(2)
 
 
+# pylint: disable-next=too-many-return-statements
 async def get_game_state(screenshot: ndarray) -> GameState | None:
     """
     Get the current app/game state based off a screenshot.
@@ -235,29 +281,35 @@ async def get_game_state(screenshot: ndarray) -> GameState | None:
     Args:
         screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
     """
-    if screen.get_on_screen(screenshot, Image.rito_logo):
-        return GameState.loading
+    if screen.get_on_screen(screenshot, Image.RITO_LOGO):
+        return GameState.LOADING
 
-    if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.back):
-        return GameState.main_menu
+    if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.BACK):
+        return GameState.MAIN_MENU
 
     if screen.get_button_on_screen(screenshot, Button.normal_game):
-        return GameState.choose_mode
+        return GameState.CHOOSE_MODE
 
     if screen.get_button_on_screen(screenshot, Button.check):
-        return GameState.queue_missed
+        return GameState.QUEUE_MISSED
 
-    if screen.get_on_screen(screenshot, Image.close_lobby) and screen.get_button_on_screen(screenshot, Button.play):
-        return GameState.lobby
+    if screen.get_on_screen(screenshot, Image.CLOSE_LOBBY) and screen.get_button_on_screen(screenshot, Button.play):
+        return GameState.LOBBY
 
-    if screen.get_on_screen(screenshot, Image.composition) or screen.get_on_screen(screenshot, Image.items):
-        return GameState.in_game
+    if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
+        return GameState.IN_GAME
 
-    if screen.get_on_screen(screenshot, Image.first_place) and screen.get_on_screen(screenshot, Image.back):
-        return GameState.post_game
+    if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
+        return GameState.POST_GAME
 
 
 async def check_phone_preconditions(adb_instance: ADB):
+    """
+    Checks the phone for the screen size, pixel density, memory and app (TFT) we need.
+
+    Args:
+        adb_instance: The adb instance to check the conditions on.
+    """
     logger.debug("Checking phone preconditions")
 
     size = await adb_instance.get_screen_size()
@@ -286,6 +338,10 @@ async def check_phone_preconditions(adb_instance: ADB):
 
 
 async def main():
+    """
+    Main method, loads ADB connection, checks if the phone is ready to be used and
+    finally loops the main app loop in a device disconnect catch wrapper.
+    """
     adb_instance = ADB()
     await adb_instance.load()
     if not adb_instance.is_connected():
@@ -298,7 +354,7 @@ async def main():
     await loop_disconnect_wrapper(adb_instance)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

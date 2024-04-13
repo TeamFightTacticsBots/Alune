@@ -1,5 +1,9 @@
+"""
+Module to handle anything related to images and buttons (images that result in a click) we use.
+"""
 from dataclasses import dataclass
-from enum import StrEnum, auto
+from enum import auto
+from enum import StrEnum
 from random import Random
 
 
@@ -83,7 +87,10 @@ class BoundingBox:
         Returns:
             A random coordinate within the bounding box.
         """
-        return Coordinate(random.randint(self.min_x, self.max_x), random.randint(self.min_y, self.max_y))
+        return Coordinate(
+            random.randint(self.min_x, self.max_x),
+            random.randint(self.min_y, self.max_y),
+        )
 
     def is_inside(self, coordinate: Coordinate) -> bool:
         """
@@ -102,12 +109,15 @@ class Image(StrEnum):
     """
     An image enum which holds the path to the image as a value.
     """
-    def _generate_next_value_(self, start, count, last_values):
+
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
         """
         The effective method called by auto().
 
         Args:
-            self: The name of the enum key.
+            name: The name of the enum key.
             start: Not used in StrEnum.
             count: Not used in StrEnum.
             last_values: Not used in StrEnum.
@@ -115,18 +125,18 @@ class Image(StrEnum):
         Returns:
             The value that the key should have.
         """
-        return "alune/images/" + self + ".png"
+        return "alune/images/" + name.lower() + ".png"
 
-    rito_logo = auto()
-    close_lobby = auto()
-    accepted = auto()
-    composition = auto()
-    items = auto()
-    first_place = auto()
-    back = auto()
-    settings = auto()
-    pick_augment = auto()
-    carousel = auto()
+    RITO_LOGO = auto()
+    CLOSE_LOBBY = auto()
+    ACCEPTED = auto()
+    COMPOSITION = auto()
+    ITEMS = auto()
+    FIRST_PLACE = auto()
+    BACK = auto()
+    SETTINGS = auto()
+    PICK_AUGMENT = auto()
+    CAROUSEL = auto()
 
 
 class Trait(StrEnum):
@@ -134,16 +144,20 @@ class Trait(StrEnum):
     The same as ImageEnum, but images are intentionally in a different place and will
     change with each set.
     """
-    def _generate_next_value_(self, start, count, last_values):
-        return "alune/images/traits/" + self + ".png"
 
-    heavenly = auto()
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
+        return "alune/images/traits/" + name.lower() + ".png"
+
+    HEAVENLY = auto()
 
 
-class ClickButton:
+class ClickButton:  # pylint: disable=too-few-public-methods
     """
     A button which can and will be clicked.
     """
+
     def __init__(self, click_box: BoundingBox):
         """
         Create a ClickButton.
@@ -154,11 +168,12 @@ class ClickButton:
         self.click_box = click_box
 
 
-class ImageButton:
+class ImageButton:  # pylint: disable=too-few-public-methods
     """
     A button which can and will be clicked, which also holds an Image the button is
     recognized by.
     """
+
     def __init__(self, click_box: BoundingBox, capture_area: BoundingBox | None = None):
         """
         Create an ImageButton.
@@ -186,22 +201,35 @@ class Button:
     """
     Class which holds all buttons the bot recognizes and clicks.
     """
+
     # Buttons with an image, the variable name must be the same as the image name.
     play = ImageButton(BoundingBox(950, 600, 1200, 650))
     accept = ImageButton(BoundingBox(525, 520, 755, 545))
-    exit_now = ImageButton(click_box=BoundingBox(550, 425, 740, 440), capture_area=BoundingBox(520, 400, 775, 425))
+    exit_now = ImageButton(
+        click_box=BoundingBox(550, 425, 740, 440),
+        capture_area=BoundingBox(520, 400, 775, 425),
+    )
     check = ImageButton(BoundingBox(555, 425, 725, 470))
     normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
-    buy_xp = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
-    buy_xp_disabled = ImageButton(click_box=BoundingBox(35, 593, 124, 682), capture_area=BoundingBox(9, 550, 170, 708))
+    buy_xp = ImageButton(
+        click_box=BoundingBox(35, 593, 124, 682),
+        capture_area=BoundingBox(9, 550, 170, 708),
+    )
+    buy_xp_disabled = ImageButton(
+        click_box=BoundingBox(35, 593, 124, 682),
+        capture_area=BoundingBox(9, 550, 170, 708),
+    )
     return_to_board = ImageButton(
-        click_box=BoundingBox(1155, 595, 1242, 682), capture_area=BoundingBox(1128, 568, 1269, 709)
+        click_box=BoundingBox(1155, 595, 1242, 682),
+        capture_area=BoundingBox(1128, 568, 1269, 709),
     )
     choose_one = ImageButton(
-        click_box=BoundingBox(636, 91, 693, 186), capture_area=BoundingBox(1128, 568, 1269, 709)
+        click_box=BoundingBox(636, 91, 693, 186),
+        capture_area=BoundingBox(1128, 568, 1269, 709),
     )
     choose_one_hidden = ImageButton(
-        click_box=BoundingBox(1155, 595, 1242, 682), capture_area=BoundingBox(1128, 568, 1269, 709)
+        click_box=BoundingBox(1155, 595, 1242, 682),
+        capture_area=BoundingBox(1128, 568, 1269, 709),
     )
 
     # Buttons without an image.
