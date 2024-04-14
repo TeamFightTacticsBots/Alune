@@ -8,6 +8,9 @@ Teamfight Tactics (TFT) bot for the mobile version. Farms pass experience, event
 
 **Table of Contents**
 1. [Features](#features)
+   1. [Existing](#existing)
+   2. [Planned](#planned)
+   3. [Potential](#potential)
 2. [Setup](#setup)
    1. [Android Emulator](#android-emulator)
    2. [Bot](#bot)
@@ -21,16 +24,31 @@ Teamfight Tactics (TFT) bot for the mobile version. Farms pass experience, event
 The purpose is to farm the TFT pass experience and League event tokens. The bot is "good enough".
 We will never support playing ranked with it. We also do not encourage you to learn from its decisions.
 
+### Existing
+
 1. Uses ADB to be able to support every emulator or phone and runs in the background
 2. Can start up TFT and queues for normal games
-3. Buys experience (in random intervals) and pre-configured traits
-4. Rolls and buys (random) augments
-5. Pathes randomly on carousel rounds
+3. Buys experience and shop cards (currently only Heavenly units)
+4. Rolls and buys augments
+5. Walks around on carousel rounds
 
-Potential future features:
-1. Rolling the shop
+### Planned
+
+1. More traits
 2. Using optional OCR for economy-based decisions (i.E. Saving up to 50 gold)
-3. Giving items to units 
+   1. Includes rolling store cards
+3. A configuration file and or interface
+   1. ADB port
+   2. Which traits to buy
+   3. Logging level
+   4. Whether to use OCR
+4. Randomization of various sleep intervals
+5. Surrendering as early as possible
+
+### Potential
+1. Giving items to units 
+2. Picking up item orbs
+3. Selling item anvils
 
 ## Setup
 
