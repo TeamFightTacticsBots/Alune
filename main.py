@@ -55,7 +55,6 @@ async def queue(adb_instance: ADB):
     Args:
         adb_instance: An instance of the ADB connection to click in.
     """
-    logger.info("Queue started, waiting for accept button.")
     try:
         await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=120)
     except asyncio.TimeoutError:
@@ -73,15 +72,7 @@ async def queue(adb_instance: ADB):
     await asyncio.sleep(3)
 
     screenshot = await adb_instance.get_screen()
-    search_result = screen.get_button_on_screen(screenshot, Button.check)
-    if search_result:
-        logger.debug("Queue was missed, accepting and re-queueing")
-        await adb_instance.click_button(Button.check)
-        await asyncio.sleep(2)
-        await adb_instance.click_button(Button.play)
-        await queue(adb_instance)
-
-    if screen.get_button_on_screen(screenshot, Button.play):
+    if screen.get_button_on_screen(screenshot, Button.accept) or screen.get_button_on_screen(screenshot, Button.play):
         logger.debug("Queue was declined by someone else, staying in queue lock state")
         await queue(adb_instance)
 
