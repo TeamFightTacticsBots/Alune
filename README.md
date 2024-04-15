@@ -44,6 +44,7 @@ We will never support playing ranked with it. We also do not encourage you to le
    4. Whether to use OCR
 4. Randomization of various sleep intervals
 5. Surrendering as early as possible
+6. Vote on one of the gates at the start of the game
 
 ### Potential
 1. Giving items to units 
