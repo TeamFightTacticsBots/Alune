@@ -10,6 +10,7 @@ from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 import cv2
 import numpy
 from numpy import ndarray
+from loguru import logger
 
 from alune.images import ClickButton
 from alune.images import ImageButton
@@ -57,12 +58,13 @@ class ADB:
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
 
-    async def _connect_to_device(self):
+    async def _connect_to_device(self, port: int = 5555):
         """
         Connect to the device via TCP.
         """
         # TODO Make port configurable (GUI or config.yml) or add port discovery
-        device = AdbDeviceTcpAsync(host="localhost", port=5555, default_transport_timeout_s=9)
+        device = AdbDeviceTcpAsync(host="localhost", port=port, default_transport_timeout_s=9)
+        logger.info(f"Attempting to connect to ADB session with device localhost:{port}")
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
@@ -70,6 +72,10 @@ class ADB:
                 return
         except OSError:
             self._device = None
+        logger.warning(f"Failed to connect to ADB session with device localhost:{port}")
+        # Silly hack to attempt to fall back on port 5556, in case the default port was in use when their adb session started
+        if port == 5555:
+           await self._connect_to_device(self, port=(port + 1)) 
 
     def is_connected(self) -> bool:
         """

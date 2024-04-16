@@ -14,6 +14,7 @@ from numpy import ndarray
 
 from alune import screen
 from alune.adb import ADB
+from alune.helpers import raise_and_exit
 from alune.images import Button
 from alune.images import Image
 from alune.images import Trait
@@ -202,8 +203,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB):
         logger.warning("ADB device was disconnected, attempting one reconnect...")
         await adb_instance.load()
         if not adb_instance.is_connected():
-            logger.error("Could not reconnect. Please check your emulator for any errors. Exiting.")
-            sys.exit(1)
+            raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
         await loop_disconnect_wrapper(adb_instance)
 
@@ -307,6 +307,9 @@ async def check_phone_preconditions(adb_instance: ADB):
     if size != "1280x720":
         logger.info(f"Changing screen size from {size} to 1280x720.")
         await adb_instance.set_screen_size()
+        size = await adb_instance.get_screen_size()
+        if size != "1280x720":
+            raise_and_exit("Failed to change the screen size -- this may require manual intervention!")
 
     density = await adb_instance.get_screen_density()
     if density != "240":
@@ -321,8 +324,7 @@ async def check_phone_preconditions(adb_instance: ADB):
             # TODO Avoid Google Play (add README warning for Google Play interruptions) and install from
             #  https://www.apkmirror.com/apk/riot-games-inc/teamfight-tactics-league-of-legends-strategy-game/
             #  Note, this also needs a functionality to update check (Does the app tell us? Parse from site?)
-            logger.error("TFT is not installed, please install it to continue. Exiting.")
-            sys.exit(1)
+            raise_and_exit("TFT is not installed, please install it to continue. Exiting.")
 
         logger.debug("TFT is not active, starting it")
         await adb_instance.start_tft_app()
