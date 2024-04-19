@@ -1,10 +1,13 @@
-from loguru import logger
+"""
+Collection of helper methods.
+"""
+
 import sys
 
-def raise_and_exit(
-    error: str,
-    exit_code: int = 1
-) -> None:
+from loguru import logger
+
+
+def raise_and_exit(error: str, exit_code: int = 1) -> None:
     """
     Raise the given text as an error and then exit the application
 

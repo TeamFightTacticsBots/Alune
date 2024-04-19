@@ -1,6 +1,7 @@
 """
 Module for all ADB (Android Debug Bridge) related methods.
 """
+
 import os.path
 import random
 
@@ -8,9 +9,9 @@ from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 import cv2
+from loguru import logger
 import numpy
 from numpy import ndarray
-from loguru import logger
 
 from alune.images import ClickButton
 from alune.images import ImageButton
@@ -23,6 +24,7 @@ class ADB:
     Class to hold the connection to an ADB connection via TCP.
     USB connection is possible, but not supported at the moment.
     """
+
     def __init__(self):
         """
         Initiates base values for the ADB instance.
@@ -73,9 +75,10 @@ class ADB:
         except OSError:
             self._device = None
         logger.warning(f"Failed to connect to ADB session with device localhost:{port}")
-        # Silly hack to attempt to fall back on port 5556, in case the default port was in use when their adb session started
+        # Silly hack to attempt to fall back on port 5556,
+        # in case the default port was in use when their adb session started
         if port == 5555:
-           await self._connect_to_device(self, port=(port + 1)) 
+            await self._connect_to_device(port + 1)
 
     def is_connected(self) -> bool:
         """

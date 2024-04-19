@@ -1,6 +1,7 @@
 """
 Module to handle anything related to images and buttons (images that result in a click) we use.
 """
+
 from dataclasses import dataclass
 from enum import auto
 from enum import StrEnum

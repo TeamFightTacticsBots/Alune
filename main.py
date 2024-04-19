@@ -6,7 +6,6 @@ import asyncio
 from enum import auto
 from enum import StrEnum
 from random import Random
-import sys
 
 from adb_shell.exceptions import TcpTimeoutException
 from loguru import logger
@@ -25,6 +24,7 @@ class GameState(StrEnum):
     """
     State the game or app is in.
     """
+
     LOADING = auto()
     MAIN_MENU = auto()
     CHOOSE_MODE = auto()

@@ -1,6 +1,7 @@
 """
 Module for image recognition on the screen.
 """
+
 from dataclasses import dataclass
 
 import cv2
