@@ -29,7 +29,7 @@ class ADB:
         """
         Initiates base values for the ADB instance.
         """
-        self._tft_package_name = "com.riotgames.league.teamfighttactics"
+        self.tft_package_name = "com.riotgames.league.teamfighttactics"
         self._tft_activity_name = "com.riotgames.leagueoflegends.RiotNativeActivity"
         self._random = random.Random()
         self._rsa_signer = None
@@ -206,7 +206,7 @@ class ADB:
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._device.shell(f"pm list packages {self._tft_package_name}")
+        shell_output = await self._device.shell(f"pm list packages {self.tft_package_name}")
         return shell_output != ""
 
     async def is_tft_active(self) -> bool:
@@ -217,10 +217,21 @@ class ADB:
              Whether TFT is the currently active window.
         """
         shell_output = await self._device.shell("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
-        return shell_output.split("/")[0].replace("\n", "") == self._tft_package_name
+        return shell_output.split("/")[0].replace("\n", "") == self.tft_package_name
 
     async def start_tft_app(self):
         """
         Start TFT using the activity manager (am).
         """
-        await self._device.shell(f"am start -n {self._tft_package_name}/{self._tft_activity_name}")
+        await self._device.shell(f"am start -n {self.tft_package_name}/{self._tft_activity_name}")
+
+    async def get_tft_version(self) -> str:
+        """
+        Get the version of the TFT package.
+
+        Returns:
+            The versionName of the tft package.
+        """
+        return await self._device.shell(
+            f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
+        )

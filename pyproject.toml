@@ -17,6 +17,7 @@ dependencies = [
     "adb-shell[async]==0.4.4",
     "numpy==1.26.4",
     "opencv-python==4.9.0.80",
+    "google-play-scraper==1.2.6",
     "loguru==0.7.2",
 ]
 

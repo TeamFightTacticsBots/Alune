@@ -8,6 +8,7 @@ from enum import StrEnum
 from random import Random
 
 from adb_shell.exceptions import TcpTimeoutException
+import google_play_scraper
 from loguru import logger
 from numpy import ndarray
 
@@ -301,8 +302,7 @@ async def check_phone_preconditions(adb_instance: ADB):
     Args:
         adb_instance: The adb instance to check the conditions on.
     """
-    logger.debug("Checking phone preconditions")
-
+    logger.debug("Checking screen size")
     size = await adb_instance.get_screen_size()
     if size != "1280x720":
         logger.info(f"Changing screen size from {size} to 1280x720.")
@@ -311,21 +311,29 @@ async def check_phone_preconditions(adb_instance: ADB):
         if size != "1280x720":
             raise_and_exit("Failed to change the screen size -- this may require manual intervention!")
 
+    logger.debug("Checking screen density")
     density = await adb_instance.get_screen_density()
     if density != "240":
         logger.info(f"Changing dpi from {density} to 240.")
         await adb_instance.set_screen_density()
 
+    logger.debug("Checking memory")
     if await adb_instance.get_memory() < 4_000_000:
         logger.warning("Your device has less than 4GB of memory, lags may occur.")
 
-    if not await adb_instance.is_tft_active():
-        if not await adb_instance.is_tft_installed():
-            # TODO Avoid Google Play (add README warning for Google Play interruptions) and install from
-            #  https://www.apkmirror.com/apk/riot-games-inc/teamfight-tactics-league-of-legends-strategy-game/
-            #  Note, this also needs a functionality to update check (Does the app tell us? Parse from site?)
-            raise_and_exit("TFT is not installed, please install it to continue. Exiting.")
+    logger.debug("Checking if TFT is installed")
+    if not await adb_instance.is_tft_installed():
+        raise_and_exit("TFT is not installed, please install it to continue. Exiting.")
 
+    logger.debug("Checking TFT app version")
+    installed_version = await adb_instance.get_tft_version()
+    play_store_version = google_play_scraper.app(adb_instance.tft_package_name)["version"]
+
+    if int(play_store_version.replace(".", "")) > int(installed_version.replace(".", "")):
+        raise_and_exit("A new version of the TFT app is available. Please update to not be locked in queue.")
+
+    logger.debug("Checking if TFT is active")
+    if not await adb_instance.is_tft_active():
         logger.debug("TFT is not active, starting it")
         await adb_instance.start_tft_app()
 
@@ -341,6 +349,7 @@ async def main():
         logger.error("There is no ADB device ready. Exiting.")
         return
 
+    logger.debug("ADB is connected, checking phone and app details")
     await check_phone_preconditions(adb_instance)
     logger.info("Connected to ADB and device is set up correctly, starting main loop.")
 
