@@ -5,6 +5,7 @@ The main class for Alune, responsible for the main loop.
 import asyncio
 from enum import auto
 from enum import StrEnum
+import os
 from random import Random
 
 from adb_shell.exceptions import TcpTimeoutException
@@ -12,6 +13,7 @@ import google_play_scraper
 from loguru import logger
 from numpy import ndarray
 
+from alune import helpers
 from alune import screen
 from alune.adb import ADB
 from alune.helpers import raise_and_exit
@@ -343,6 +345,11 @@ async def main():
     Main method, loads ADB connection, checks if the phone is ready to be used and
     finally loops the main app loop in a device disconnect catch wrapper.
     """
+    logs_path = helpers.get_application_path("logs")
+    if not os.path.exists(logs_path):
+        os.mkdir(logs_path)
+    logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
+
     adb_instance = ADB()
     await adb_instance.load()
     if not adb_instance.is_connected():

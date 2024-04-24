@@ -7,6 +7,8 @@ from enum import auto
 from enum import StrEnum
 from random import Random
 
+from alune import helpers
+
 
 @dataclass
 class Coordinate:
@@ -126,7 +128,7 @@ class Image(StrEnum):
         Returns:
             The value that the key should have.
         """
-        return "alune/images/" + name.lower() + ".png"
+        return helpers.get_resource_path(f"alune/images/{name.lower()}.png")
 
     RITO_LOGO = auto()
     CLOSE_LOBBY = auto()
@@ -149,7 +151,7 @@ class Trait(StrEnum):
     # noinspection PyMethodParameters
     # pylint: disable-next=no-self-argument,redefined-outer-name
     def _generate_next_value_(name, start, count, last_values):
-        return "alune/images/traits/" + name.lower() + ".png"
+        return helpers.get_resource_path(f"alune/images/traits/{name.lower()}.png")
 
     HEAVENLY = auto()
 
@@ -194,7 +196,7 @@ class ImageButton:  # pylint: disable=too-few-public-methods
         Args:
             button_name: The file name of the button, without extension.
         """
-        self.image_path = "alune/images/buttons/" + button_name + ".png"
+        self.image_path = helpers.get_resource_path(f"alune/images/buttons/{button_name}.png")
 
 
 @dataclass
