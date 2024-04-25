@@ -83,3 +83,10 @@ isort .
 flake8
 pylint main.py alune
 ```
+
+### Compiling
+
+Bundling the project into a .exe can be done with
+```bash
+pyinstaller Alune.spec
+```
