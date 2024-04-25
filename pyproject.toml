@@ -19,20 +19,23 @@ dependencies = [
     "opencv-python==4.9.0.80",
     "google-play-scraper==1.2.6",
     "loguru==0.7.2",
-    "pyinstaller==6.6.0",
 ]
 
 [project.optional-dependencies]
-lint = [
+dev = [
     "black==24.4.0",
     "flake8==7.0.0",
     "isort==5.13.2",
     "pylint==3.1.0",
+    "pyinstaller==6.6.0",
 ]
 
 [project.urls]
 Repository = "https://github.com/TeamFightTacticsBots/Alune.git"
 "Bug Tracker" = "https://github.com/TeamFightTacticsBots/Alune/issues"
+
+[tool.setuptools]
+py-modules = ["alune"]
 
 [tool.black]
 line-length = 120
