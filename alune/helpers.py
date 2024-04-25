@@ -57,6 +57,26 @@ def get_resource_path(relative_path: str | None = None):
     return str(path)
 
 
+def is_version_string_newer(version_one: str, version_two: str):
+    """
+    Checks if version_one is newer than version_two.
+
+    Args:
+        version_one: The semantic version string to check
+        version_two: The semantic version string to check against
+
+    Returns:
+        Whether version_one is newer than version_two.
+    """
+    version_one_parts = version_one.split(".")
+    version_two_parts = version_two.split(".")
+
+    for i in range(min(len(version_one_parts), len(version_two_parts))):
+        if int(version_one_parts[i]) > int(version_two_parts[i]):
+            return True
+    return False
+
+
 def raise_and_exit(error: str, exit_code: int = 1) -> None:
     """
     Raise the given text as an error and then exit the application
