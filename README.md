@@ -11,10 +11,12 @@ Teamfight Tactics (TFT) bot for the mobile version. Farms pass experience, event
 1. [Features](#features)
 2. [Setup](#setup)
    1. [Android Emulator](#android-emulator)
-   2. [Bot](#bot)
+   2. [Bot (executable)](#bot-executable)
+   3. [Bot (source)](#bot-source)
 3. [Running](#running)
    1. [Emulator](#emulator)
-   2. [Bot](#bot-1)
+   2. [Bot (executable)](#bot-executable-1)
+   3. [Bot (source)](#bot-source-1)
 4. [Development](#development) 
 
 ## Features
@@ -43,7 +45,11 @@ You can find planned and potential future features on our [Features wiki page](h
 3. Start the TFT app and log in to your Riot account.
    1. If you get a warning about needing to try again later, try a linked social log-in (Google, Facebook, Xbox).
 
-### Bot
+### Bot (executable)
+
+1. Download the latest [release](https://github.com/TeamFightTacticsBots/Alune/releases).
+
+### Bot (source)
 
 1. Download and install [Python 3.12](https://www.python.org/downloads/) for your operating system
 2. Open a shell of your choice (Defaults: PowerShell on Windows, Zsh on MacOS, Bash on Linux)
@@ -54,7 +60,7 @@ You can find planned and potential future features on our [Features wiki page](h
    1. PowerShell: `alune-venv\Scripts\Activate.ps1`, Zsh/Bash: `alune-venv/bin/activate`  
    2. This should put `(alune-venv)` in the front of your shell prompt string.
 7. Install the project dependencies: `pip install .`
-   1. If you want to install for a development environment, use `pip install .[lint]`
+   1. If you want to install for a development environment, use `pip install .[dev]`
 
 ## Running
 
@@ -66,11 +72,19 @@ You can find planned and potential future features on our [Features wiki page](h
 > While the bot will handle almost any scenario the app may run into, it will never log in for you.
 > You do not need to start TFT for the bot to be able to run, but it is a good idea to check if you are logged in.
 
-### Bot
+### Bot (executable)
+
+1. Run the downloaded `Alune.exe`. 
+
+For bug reports, logs can be found in the `logs` folder in the same folder as the `.exe` after the first run.
+
+### Bot (source)
 
 1. If not already active, activate the virtual environment - see setup step 6.  
    1. If you use PyCharm or VS Code, you can use the in-built terminal, which does this automatically for you.
 2. Run `python main.py`
+
+For bug reports, logs can be found in the `logs` folder in the project folder after the first run.
 
 ## Development
 
