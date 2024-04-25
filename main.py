@@ -331,7 +331,7 @@ async def check_phone_preconditions(adb_instance: ADB):
     installed_version = await adb_instance.get_tft_version()
     play_store_version = google_play_scraper.app(adb_instance.tft_package_name)["version"]
 
-    if int(play_store_version.replace(".", "")) > int(installed_version.replace(".", "")):
+    if helpers.is_version_string_newer(play_store_version, installed_version):
         raise_and_exit("A new version of the TFT app is available. Please update to not be locked in queue.")
 
     logger.debug("Checking if TFT is active")
