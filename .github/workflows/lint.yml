@@ -7,29 +7,24 @@ on:
 
 jobs:
   linting:
-    runs-on: [windows-latest]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.12"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set Up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
     - name: Install dependencies
-      run: |
-        pip install .[lint]
+      run: pip install .[lint]
     - name: isort
-      run: |
-        isort --check .
+      run: isort --check .
     - name: flake8
-      run: |
-        flake8
+      run: flake8
     - name: black
-      run: |
-        black . --check --verbose --diff
+      run: black . --check --verbose --diff
     - name: pylint
-      run: |
-        pylint --rcfile .pylintrc --persistent n --fail-under 10 -sn main.py alune
+      run: pylint --persistent n --fail-under 10 -sn main.py alune
