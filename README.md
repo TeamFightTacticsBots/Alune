@@ -2,7 +2,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-green" />
   <img src="https://img.shields.io/badge/TFT_Set-11-blue" />
-  <img src="https://github.com/TeamFightTacticsBots/Alune/actions/workflows/main.yml/badge.svg" />
+  <img src="https://github.com/TeamFightTacticsBots/Alune/actions/workflows/build.yml/badge.svg" />
 </p>
 
 Teamfight Tactics (TFT) bot for the mobile version. Farms pass experience, events, and tokens.

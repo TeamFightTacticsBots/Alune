@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set Up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    - name: Install dependencies
+      run: pip install .[lint]
+    - name: Build
+      run: pyinstaller Alune.spec
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: alune-build
+        path: dist/Alune.exe
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Download build
+      uses: actions/download-artifact@v4
+      with:
+        name: alune-build
+        path: dist/Alune.exe
+    - name: Parse version from pyproject.toml and write to GITHUB_OUTPUT
+      run: |
+        version=$(cat pyproject.toml | grep version | head -1 | awk '{ gsub("\"", "") } { print $3 }')
+        echo "version=$version" >> $GITHUB_OUTPUT
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/Alune.exe"
+        tag: v${{ steps.getversion.outputs.version }}
+        draft: true
