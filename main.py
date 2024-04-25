@@ -5,8 +5,12 @@ The main class for Alune, responsible for the main loop.
 import asyncio
 from enum import auto
 from enum import StrEnum
+import importlib.metadata
+import json
 import os
 from random import Random
+from urllib.error import HTTPError
+import urllib.request
 
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
@@ -340,6 +344,28 @@ async def check_phone_preconditions(adb_instance: ADB):
         await adb_instance.start_tft_app()
 
 
+async def check_version():
+    """
+    Checks the remote version against the local version and prints out a warning if remote is newer.
+    """
+    local_version = importlib.metadata.version("Alune")
+    try:
+        with urllib.request.urlopen(
+            "https://api.github.com/repos/TeamFightTacticsBots/Alune/releases/latest"
+        ) as remote_release:
+            remote_version = json.loads(remote_release.read().decode("utf-8"))["tag_name"].replace("v", "")
+            if helpers.is_version_string_newer(remote_version, local_version):
+                logger.warning(
+                    "A newer version is available. "
+                    "You can download it at https://github.com/TeamFightTacticsBots/Alune/releases/latest"
+                )
+        return
+    except HTTPError:
+        logger.debug("Remote is not reachable, assuming local is newer.")
+
+    logger.info("You are running the latest version.")
+
+
 async def main():
     """
     Main method, loads ADB connection, checks if the phone is ready to be used and
@@ -349,6 +375,8 @@ async def main():
     if not os.path.exists(logs_path):
         os.mkdir(logs_path)
     logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
+
+    await check_version()
 
     adb_instance = ADB()
     await adb_instance.load()
