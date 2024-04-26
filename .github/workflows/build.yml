@@ -36,13 +36,13 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: alune-build
-        path: dist/Alune.exe
     - name: Parse version from pyproject.toml and write to GITHUB_OUTPUT
+      id: parse_version
       run: |
         version=$(cat pyproject.toml | grep version | head -1 | awk '{ gsub("\"", "") } { print $3 }')
         echo "version=$version" >> $GITHUB_OUTPUT
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "dist/Alune.exe"
-        tag: v${{ steps.getversion.outputs.version }}
+        artifacts: "Alune.exe"
+        tag: v${{ steps.parse_version.outputs.version }}
         draft: true
