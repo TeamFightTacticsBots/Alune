@@ -52,14 +52,16 @@ You can find planned and potential future features on our [Features wiki page](h
 ### Bot (source)
 
 1. Download and install [Python 3.12](https://www.python.org/downloads/) for your operating system
-2. Open a shell of your choice (Defaults: PowerShell on Windows, Zsh on MacOS, Bash on Linux)
-3. Clone this repository: `git clone https://github.com/TeamFightTacticsBots/Alune.git`
-4. Go into the repository: `cd Alune`
-5. Create a virtual Python environment: `python -m venv alune-venv`
-6. Activate the virtual environment.  
+2. Download and install [git](https://git-scm.com/downloads) for your operating system
+3. Open a shell of your choice (Defaults: PowerShell on Windows, Zsh on MacOS, Bash on Linux)
+   1. You can verify your python version by running `python --version`.
+4. Clone this repository: `git clone https://github.com/TeamFightTacticsBots/Alune.git`
+5. Go into the repository: `cd Alune`
+6. Create a virtual Python environment: `python -m venv alune-venv`
+7. Activate the virtual environment.  
    1. PowerShell: `alune-venv\Scripts\Activate.ps1`, Zsh/Bash: `alune-venv/bin/activate`  
    2. This should put `(alune-venv)` in the front of your shell prompt string.
-7. Install the project dependencies: `pip install .`
+8. Install the project dependencies: `pip install .`
    1. If you want to install for a development environment, use `pip install .[dev]`
 
 ## Running
