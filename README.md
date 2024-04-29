@@ -5,7 +5,7 @@
   <img src="https://github.com/TeamFightTacticsBots/Alune/actions/workflows/build.yml/badge.svg" />
 </p>
 
-Teamfight Tactics (TFT) bot for the mobile version. Farms pass experience, events, and tokens.
+Teamfight Tactics / TFT bot for the mobile version. Farms pass experience, events, and tokens.
 
 **Table of Contents**
 1. [Features](#features)
@@ -41,7 +41,7 @@ You can find planned and potential future features on our [Features wiki page](h
    2. Some emulators may need adjustment of the port our ADB utility connects to. The place to adjust it is [here](./alune/adb.py) in `_connect_to_device`.
 2. Install the TFT APK by downloading it from [APKMirror](https://www.apkmirror.com/apk/riot-games-inc/teamfight-tactics-league-of-legends-strategy-game/) and dragging it into your emulator.
    1. If drag and drop does not work, review your emulator's documentation on how to install APK files.  
-   2. **While we discourage using Google Play** since it may add overlays the bot does not check for, _it should still work_. Also, entering your Google credentials in emulators is generally a good security practice to avoid.
+   2. While the bot should work with the Google Play version, **we discourage using Google Play**. It may add overlays the bot does not check for. It is also generally good security practice to **not** enter your Google credentials in emulators.
 3. Start the TFT app and log in to your Riot account.
    1. If you get a warning about needing to try again later, try a linked social log-in (Google, Facebook, Xbox).
 
