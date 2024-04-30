@@ -16,4 +16,4 @@ dist/
 
 # Project specific files
 adb_key*
-logs/
+alune-output/

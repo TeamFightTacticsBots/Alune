@@ -371,9 +371,8 @@ async def main():
     Main method, loads ADB connection, checks if the phone is ready to be used and
     finally loops the main app loop in a device disconnect catch wrapper.
     """
-    logs_path = helpers.get_application_path("logs")
-    if not os.path.exists(logs_path):
-        os.mkdir(logs_path)
+    logs_path = helpers.get_application_path("alune-output/logs")
+    os.makedirs(logs_path, exist_ok=True)
     logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
 
     await check_version()
