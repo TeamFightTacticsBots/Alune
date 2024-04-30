@@ -17,6 +17,7 @@ class AluneConfig:
     """
     Alune config class.
     """
+
     def __init__(self):
         """
         Writes the configuration from resource (provided in repository) to storage path, loads the configuration from
