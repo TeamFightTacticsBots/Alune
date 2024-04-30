@@ -13,6 +13,7 @@ from loguru import logger
 import numpy
 from numpy import ndarray
 
+from alune import helpers
 from alune.images import ClickButton
 from alune.images import ImageButton
 from alune.screen import BoundingBox
@@ -49,13 +50,14 @@ class ADB:
         if self._rsa_signer is not None:
             return
 
-        if not os.path.isfile("adb_key"):
-            keygen("adb_key")
+        adb_key_filepath = helpers.get_application_path("alune-output/adb_key")
+        if not os.path.isfile(adb_key_filepath):
+            keygen(adb_key_filepath)
 
-        with open("adb_key", encoding="utf-8") as adb_key_file:
+        with open(adb_key_filepath, encoding="utf-8") as adb_key_file:
             private_key = adb_key_file.read()
 
-        with open("adb_key.pub", encoding="utf-8") as adb_key_file:
+        with open(adb_key_filepath + ".pub", encoding="utf-8") as adb_key_file:
             public_key = adb_key_file.read()
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
