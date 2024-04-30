@@ -1,0 +1,22 @@
+# The level to log information at. The higher the level, the less you will see.
+# We do not recommend setting it higher than WARNING, but support it.
+# Valid levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+log_level: "INFO"
+
+# The ADB port your emulator is open on.
+# Should be 5555 in most cases. If you're unable to get this to work,
+# visit https://github.com/TeamFightTacticsBots/Alune/wiki/ADB-Port for more information.
+adb_port: 5555
+
+# The traits you want the bot to roll for.
+# The trait names are almost as written in-game, with spaces replaced by _ and . and : being ignored.
+# For example: admin, star_guardian, mecha_prime, lasercorps
+# For a full list of valid traits, visit https://github.com/TeamFightTacticsBots/Alune/tree/main/alune/images/traits
+traits:
+  - heavenly
+
+# Changing these below values manually can potentially break the bot, so don't!
+# Version of the YAML.
+version: 1
+# Version of the TFT set.
+set: 11
