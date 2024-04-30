@@ -359,7 +359,7 @@ async def check_version():
                     "A newer version is available. "
                     "You can download it at https://github.com/TeamFightTacticsBots/Alune/releases/latest"
                 )
-        return
+                return
     except HTTPError:
         logger.debug("Remote is not reachable, assuming local is newer.")
 
