@@ -153,6 +153,16 @@ class Trait(StrEnum):
     def _generate_next_value_(name, start, count, last_values):
         return helpers.get_resource_path(f"alune/images/traits/{name.lower()}.png")
 
+    @classmethod
+    def get_default_traits(cls):
+        """
+        Gets a list of default traits the bot should use.
+
+        Returns:
+            A list of the traits to be played by default, if the user misconfigures.
+        """
+        return [cls.HEAVENLY]
+
     HEAVENLY = auto()
 
 
