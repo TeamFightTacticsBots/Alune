@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('alune/images', 'alune/images')],
+    datas=[('alune/images', 'alune/images'), ('alune/resources', 'alune/resources')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
