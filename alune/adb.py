@@ -36,12 +36,15 @@ class ADB:
         self._rsa_signer = None
         self._device = None
 
-    async def load(self):
+    async def load(self, port: int):
         """
         Load the RSA signer and attempt to connect to a device via ADB TCP.
+
+        Args:
+            port: The port to attempt to connect to.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device()
+        await self._connect_to_device(port)
 
     async def _load_rsa_signer(self):
         """
@@ -62,11 +65,10 @@ class ADB:
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
 
-    async def _connect_to_device(self, port: int = 5555):
+    async def _connect_to_device(self, port: int):
         """
         Connect to the device via TCP.
         """
-        # TODO Make port configurable (GUI or config.yml) or add port discovery
         device = AdbDeviceTcpAsync(host="localhost", port=port, default_transport_timeout_s=9)
         logger.info(f"Attempting to connect to ADB session with device localhost:{port}")
         try:

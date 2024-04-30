@@ -9,6 +9,7 @@ import importlib.metadata
 import json
 import os
 from random import Random
+import sys
 from urllib.error import HTTPError
 import urllib.request
 
@@ -20,10 +21,10 @@ from numpy import ndarray
 from alune import helpers
 from alune import screen
 from alune.adb import ADB
+from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
 from alune.images import Button
 from alune.images import Image
-from alune.images import Trait
 from alune.screen import BoundingBox
 
 
@@ -120,40 +121,44 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     await asyncio.sleep(1)
 
 
-async def buy_from_shop(adb_instance: ADB):
+async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
     """
     Checks the shop for traits and purchases it if found.
 
     Args:
         adb_instance: The adb instance to check and buy in.
+        config: An instance of the alune config to use.
     """
     screenshot = await adb_instance.get_screen()
-    search_result = screen.get_on_screen(
-        image=screenshot,
-        # TODO Make trait configurable
-        path=Trait.HEAVENLY,
-        bounding_box=BoundingBox(170, 110, 1250, 230),
-        precision=0.9,
-    )
-    if not search_result:
-        return
+    for trait in config.get_traits():
+        search_result = screen.get_on_screen(
+            image=screenshot,
+            path=trait,
+            bounding_box=BoundingBox(170, 110, 1250, 230),
+            precision=0.9,
+        )
+        if not search_result:
+            return
 
-    store_cards = Button.get_store_cards()
-    _random.shuffle(store_cards)
-    for store_card in store_cards:
-        if not store_card.click_box.is_inside(search_result.get_middle()):
-            continue
-        logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
-        await adb_instance.click_button(store_card)
-        break
+        store_cards = Button.get_store_cards()
+        _random.shuffle(store_cards)
+        for store_card in store_cards:
+            if not store_card.click_box.is_inside(search_result.get_middle()):
+                continue
+            logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
+            await adb_instance.click_button(store_card)
+            break
+
+        await asyncio.sleep(0.25)
 
 
-async def take_game_decision(adb_instance: ADB):
+async def take_game_decision(adb_instance: ADB, config: AluneConfig):
     """
     Called by the game loop to take a decision in the current game.
 
     Args:
         adb_instance: The adb instance to take the decision in.
+        config: An instance of the alune config to use.
     """
     screenshot = await adb_instance.get_screen()
     is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
@@ -193,34 +198,36 @@ async def take_game_decision(adb_instance: ADB):
         await adb_instance.click_button(Button.buy_xp)
         await asyncio.sleep(1)
 
-    await buy_from_shop(adb_instance)
+    await buy_from_shop(adb_instance, config)
 
 
-async def loop_disconnect_wrapper(adb_instance: ADB):
+async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
     """
     Wraps the main loop in a TcpTimeoutException catcher, to catch device disconnects.
     Attempts to re-connect once, then gives up and exits.
 
     Args:
         adb_instance: The adb instance to run the main loop on.
+        config: An instance of the alune config to use.
     """
     try:
-        await loop(adb_instance)
+        await loop(adb_instance, config)
     except TcpTimeoutException:
         logger.warning("ADB device was disconnected, attempting one reconnect...")
-        await adb_instance.load()
+        await adb_instance.load(config.get_adb_port())
         if not adb_instance.is_connected():
             raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
-        await loop_disconnect_wrapper(adb_instance)
+        await loop_disconnect_wrapper(adb_instance, config)
 
 
-async def loop(adb_instance: ADB):
+async def loop(adb_instance: ADB, config: AluneConfig):
     """
     The main app loop logic.
 
     Args:
         adb_instance: An instance of the ADB connection to click in.
+        config: An instance of the alune config to use.
     """
     while True:
         if not await adb_instance.is_tft_active():
@@ -255,7 +262,7 @@ async def loop(adb_instance: ADB):
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
-                    await take_game_decision(adb_instance)
+                    await take_game_decision(adb_instance, config)
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
@@ -375,10 +382,25 @@ async def main():
     os.makedirs(logs_path, exist_ok=True)
     logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
 
+    config = AluneConfig()
+    if config.get_log_level() != "DEBUG":
+        # Loguru does not have a setLevel method since it works different from traditional loggers.
+        # This removes the default logger and re-adds it at a new level.
+        logger.remove(0)
+        logger.add(
+            sys.stderr,
+            format=(
+                "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+                "<level>{level: <8}</level> - "
+                "<level>{message}</level>"
+            ),
+            level=config.get_log_level(),
+        )
+
     await check_version()
 
     adb_instance = ADB()
-    await adb_instance.load()
+    await adb_instance.load(config.get_adb_port())
     if not adb_instance.is_connected():
         logger.error("There is no ADB device ready. Exiting.")
         return
@@ -387,7 +409,7 @@ async def main():
     await check_phone_preconditions(adb_instance)
     logger.info("Connected to ADB and device is set up correctly, starting main loop.")
 
-    await loop_disconnect_wrapper(adb_instance)
+    await loop_disconnect_wrapper(adb_instance, config)
 
 
 if __name__ == "__main__":
