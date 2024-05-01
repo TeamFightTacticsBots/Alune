@@ -32,6 +32,8 @@ We will never support playing ranked with it. We also do not encourage you to le
 
 You can find planned and potential future features on our [Features wiki page](https://github.com/TeamFightTacticsBots/Alune/wiki/Features).
 
+The TFT bot is available as a Windows executable for convenience. Running from source is supported as well.
+
 ## Setup
 
 ### Android Emulator
@@ -78,15 +80,16 @@ You can find planned and potential future features on our [Features wiki page](h
 
 1. Run the downloaded `Alune.exe`. 
 
-For bug reports, logs can be found in the `logs` folder in the same folder as the `.exe` after the first run.
+The configuration for the bot can be found in the `alune-output` folder that's created during the first run.
+Logs for bug reports can be found in the `logs` folder in that output folder.
 
 ### Bot (source)
 
-1. If not already active, activate the virtual environment - see setup step 6.  
+1. If not already active, activate the virtual environment - see setup step 7.  
    1. If you use PyCharm or VS Code, you can use the in-built terminal, which does this automatically for you.
 2. Run `python main.py`
 
-For bug reports, logs can be found in the `logs` folder in the project folder after the first run.
+Same as with the executable, configuration and logs are in the `alune-output` folder.
 
 ## Development
 
