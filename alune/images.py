@@ -223,6 +223,7 @@ class Button:
         capture_area=BoundingBox(520, 400, 775, 425),
     )
     check = ImageButton(BoundingBox(555, 425, 725, 470))
+    check_choice = ImageButton(BoundingBox(655, 423, 829, 472))
     normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
     buy_xp = ImageButton(
         click_box=BoundingBox(35, 593, 124, 682),

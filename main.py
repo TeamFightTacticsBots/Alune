@@ -40,6 +40,7 @@ class GameState(StrEnum):
     QUEUE_MISSED = auto()
     IN_GAME = auto()
     POST_GAME = auto()
+    CHOICE_CONFIRM = auto()
 
 
 async def wait_for_accept_button(adb_instance: ADB):
@@ -246,6 +247,9 @@ async def loop(adb_instance: ADB, config: AluneConfig):
             case GameState.MAIN_MENU:
                 logger.info("App state is main menu, clicking 'Play'.")
                 await adb_instance.click_button(Button.play)
+            case GameState.CHOICE_CONFIRM:
+                logger.info("App state is choice confirm, accepting the choice.")
+                await adb_instance.click_button(Button.check_choice)
             case GameState.CHOOSE_MODE:
                 logger.info("App state is choose mode, selecting normal game.")
                 await adb_instance.click_button(Button.normal_game)
@@ -294,6 +298,9 @@ async def get_game_state(screenshot: ndarray) -> GameState | None:
 
     if screen.get_button_on_screen(screenshot, Button.normal_game):
         return GameState.CHOOSE_MODE
+
+    if screen.get_button_on_screen(screenshot, Button.check_choice):
+        return GameState.CHOICE_CONFIRM
 
     if screen.get_button_on_screen(screenshot, Button.check):
         return GameState.QUEUE_MISSED
