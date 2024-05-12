@@ -290,6 +290,9 @@ async def get_game_state(screenshot: ndarray) -> GameState | None:
     Args:
         screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
     """
+    if screen.get_button_on_screen(screenshot, Button.check_choice):
+        return GameState.CHOICE_CONFIRM
+
     if screen.get_on_screen(screenshot, Image.RITO_LOGO):
         return GameState.LOADING
 
@@ -298,9 +301,6 @@ async def get_game_state(screenshot: ndarray) -> GameState | None:
 
     if screen.get_button_on_screen(screenshot, Button.normal_game):
         return GameState.CHOOSE_MODE
-
-    if screen.get_button_on_screen(screenshot, Button.check_choice):
-        return GameState.CHOICE_CONFIRM
 
     if screen.get_button_on_screen(screenshot, Button.check):
         return GameState.QUEUE_MISSED
