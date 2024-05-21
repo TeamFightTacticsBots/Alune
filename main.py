@@ -10,7 +10,8 @@ import json
 import os
 from random import Random
 import sys
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
+from urllib.error import URLError
 import urllib.request
 
 from adb_shell.exceptions import TcpTimeoutException
