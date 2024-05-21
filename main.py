@@ -10,7 +10,7 @@ import json
 import os
 from random import Random
 import sys
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 import urllib.request
 
 from adb_shell.exceptions import TcpTimeoutException
@@ -347,7 +347,14 @@ async def check_phone_preconditions(adb_instance: ADB):
 
     logger.debug("Checking TFT app version")
     installed_version = await adb_instance.get_tft_version()
-    play_store_version = google_play_scraper.app(adb_instance.tft_package_name)["version"]
+    try:
+        play_store_version = google_play_scraper.app(adb_instance.tft_package_name)["version"]
+    except URLError as exc:
+        logger.opt(exception=exc).debug("URLError while getting Google Play TFT app version.")
+        logger.warning(
+            "Could not get the newest TFT app version from Google. Assuming the app is on the newest version."
+        )
+        play_store_version = installed_version
 
     if helpers.is_version_string_newer(play_store_version, installed_version):
         raise_and_exit("A new version of the TFT app is available. Please update to not be locked in queue.")
