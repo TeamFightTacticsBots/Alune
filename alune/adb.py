@@ -210,8 +210,25 @@ class ADB:
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._device.shell(f"pm list packages {self.tft_package_name}")
-        return shell_output != ""
+        shell_output = await self._device.shell(f"pm list packages | grep {self.tft_package_name}")
+        if not shell_output:
+            return False
+
+        packages = shell_output.replace("package:", "").split("\n")
+        packages.remove("")
+
+        if len(packages) > 1:
+            logger.debug(f"More than one TFT package is installed ({packages}). Picking '{packages[0]}'.")
+
+        if not self.tft_package_name == packages[0]:
+            logger.debug(
+                f"The pre-defined TFT package '{self.tft_package_name}' "
+                f"is not the same as the installed one '{packages[0]}'. "
+                f"Switching to '{packages[0]}' for compatibility."
+            )
+            self.tft_package_name = packages[0]
+
+        return True
 
     async def is_tft_active(self) -> bool:
         """
