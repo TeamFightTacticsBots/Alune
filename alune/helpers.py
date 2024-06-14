@@ -72,8 +72,15 @@ def is_version_string_newer(version_one: str, version_two: str):
     version_two_parts = version_two.split(".")
 
     for i in range(min(len(version_one_parts), len(version_two_parts))):
-        if int(version_one_parts[i]) > int(version_two_parts[i]):
-            return True
+        try:
+            if int(version_one_parts[i]) > int(version_two_parts[i]):
+                return True
+        except ValueError:
+            logger.warning(
+                f"We could not check version {version_one} against {version_two}. "
+                f"Assuming the installed version ({version_two}) is newer."
+            )
+            return False
     return False
 
 
