@@ -27,7 +27,8 @@ from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
 from alune.images import Button
 from alune.images import Image
-from alune.screen import BoundingBox, ImageSearchResult
+from alune.screen import BoundingBox
+from alune.screen import ImageSearchResult
 
 
 class GameState(StrEnum):
@@ -47,7 +48,11 @@ class GameState(StrEnum):
 
 @dataclass
 class GameStateImageResult:
-    game_state: GameState | None = None
+    """
+    Combines a game state with an image search result (both optional)
+    """
+
+    game_state: GameState
     image_result: ImageSearchResult | None = None
 
 
@@ -247,6 +252,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
         screenshot = await adb_instance.get_screen()
         game_state_image_result = await get_game_state(screenshot)
 
+        if not game_state_image_result:
+            await asyncio.sleep(2)
+            continue
+
         match game_state_image_result.game_state:
             case GameState.LOADING:
                 logger.info("App state is loading...")
@@ -279,7 +288,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
-                    if game_state == GameState.POST_GAME:
+                    if game_state and game_state.game_state == GameState.POST_GAME:
                         break
                 await adb_instance.click_button(Button.exit_now)
                 await asyncio.sleep(10)
@@ -322,7 +331,7 @@ async def get_game_state(screenshot: ndarray) -> GameStateImageResult | None:
     if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
         return GameStateImageResult(GameState.POST_GAME)
 
-    return GameStateImageResult()
+    return None
 
 
 async def check_phone_preconditions(adb_instance: ADB):
