@@ -3,6 +3,7 @@ The main class for Alune, responsible for the main loop.
 """
 
 import asyncio
+from dataclasses import dataclass
 from enum import auto
 from enum import StrEnum
 import importlib.metadata
@@ -26,7 +27,7 @@ from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
 from alune.images import Button
 from alune.images import Image
-from alune.screen import BoundingBox
+from alune.screen import BoundingBox, ImageSearchResult
 
 
 class GameState(StrEnum):
@@ -42,6 +43,12 @@ class GameState(StrEnum):
     IN_GAME = auto()
     POST_GAME = auto()
     CHOICE_CONFIRM = auto()
+
+
+@dataclass
+class GameStateImageResult:
+    game_state: GameState | None = None
+    image_result: ImageSearchResult | None = None
 
 
 async def wait_for_accept_button(adb_instance: ADB):
@@ -238,9 +245,9 @@ async def loop(adb_instance: ADB, config: AluneConfig):
             await asyncio.sleep(5)
 
         screenshot = await adb_instance.get_screen()
-        game_state = await get_game_state(screenshot)
+        game_state_image_result = await get_game_state(screenshot)
 
-        match game_state:
+        match game_state_image_result.game_state:
             case GameState.LOADING:
                 logger.info("App state is loading...")
                 # TODO Check if the log-in prompt is on screen
@@ -253,7 +260,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 await adb_instance.click_button(Button.check_choice)
             case GameState.CHOOSE_MODE:
                 logger.info("App state is choose mode, selecting normal game.")
-                await adb_instance.click_button(Button.normal_game)
+                await adb_instance.click_image(game_state_image_result.image_result)
             case GameState.QUEUE_MISSED:
                 logger.info("App state is queue missed, clicking it.")
                 await adb_instance.click_button(Button.check)
@@ -284,7 +291,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
 
 
 # pylint: disable-next=too-many-return-statements
-async def get_game_state(screenshot: ndarray) -> GameState | None:
+async def get_game_state(screenshot: ndarray) -> GameStateImageResult | None:
     """
     Get the current app/game state based off a screenshot.
 
@@ -292,28 +299,30 @@ async def get_game_state(screenshot: ndarray) -> GameState | None:
         screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
     """
     if screen.get_button_on_screen(screenshot, Button.check_choice):
-        return GameState.CHOICE_CONFIRM
+        return GameStateImageResult(GameState.CHOICE_CONFIRM)
 
     if screen.get_on_screen(screenshot, Image.RITO_LOGO):
-        return GameState.LOADING
+        return GameStateImageResult(GameState.LOADING)
 
     if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.BACK):
-        return GameState.MAIN_MENU
+        return GameStateImageResult(GameState.MAIN_MENU)
 
-    if screen.get_button_on_screen(screenshot, Button.normal_game):
-        return GameState.CHOOSE_MODE
+    if image_result := screen.get_button_on_screen(screenshot, Button.normal_game):
+        return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
 
     if screen.get_button_on_screen(screenshot, Button.check):
-        return GameState.QUEUE_MISSED
+        return GameStateImageResult(GameState.QUEUE_MISSED)
 
     if screen.get_on_screen(screenshot, Image.CLOSE_LOBBY) and screen.get_button_on_screen(screenshot, Button.play):
-        return GameState.LOBBY
+        return GameStateImageResult(GameState.LOBBY)
 
     if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
-        return GameState.IN_GAME
+        return GameStateImageResult(GameState.IN_GAME)
 
     if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
-        return GameState.POST_GAME
+        return GameStateImageResult(GameState.POST_GAME)
+
+    return GameStateImageResult()
 
 
 async def check_phone_preconditions(adb_instance: ADB):
