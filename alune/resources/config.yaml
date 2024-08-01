@@ -18,6 +18,6 @@ traits:
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 1
+version: 2
 # Version of the TFT set.
-set: 11
+set: 12
