@@ -161,9 +161,11 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.HEAVENLY]
+        return [cls.WITCHCRAFT, cls.INCANTOR]
 
-    HEAVENLY = auto()
+    FAERIE = auto()
+    INCANTOR = auto()
+    WITCHCRAFT = auto()
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods

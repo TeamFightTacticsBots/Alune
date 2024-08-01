@@ -26,7 +26,7 @@ We will never support playing ranked with it. We also do not encourage you to le
 
 1. Uses ADB to be able to support every emulator or phone and runs in the background
 2. Can start up TFT and queues for normal games
-3. Buys experience and shop cards (currently only Heavenly units)
+3. Buys experience and shop cards
 4. Rolls and buys augments
 5. Walks around on carousel rounds
 
