@@ -152,7 +152,7 @@ async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
             precision=0.9,
         )
         if not search_result:
-            return
+            continue
 
         store_cards = Button.get_store_cards()
         _random.shuffle(store_cards)
