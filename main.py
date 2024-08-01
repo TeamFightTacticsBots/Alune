@@ -179,7 +179,7 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
     if is_in_carousel:
         logger.debug("Is on carousel, clicking a random point within bounds")
         # Move to a random point in the carousel area
-        await adb_instance.click_bounding_box(BoundingBox(200, 100, 1100, 660))
+        await adb_instance.click_bounding_box(BoundingBox(420, 180, 825, 425))
         await asyncio.sleep(_random.randint(3, 9))
         return
 
