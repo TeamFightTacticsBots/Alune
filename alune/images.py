@@ -140,7 +140,6 @@ class Image(StrEnum):
     SETTINGS = auto()
     PICK_AUGMENT = auto()
     CAROUSEL = auto()
-    SURREND_PHASE = auto()
 
 
 class Trait(StrEnum):
