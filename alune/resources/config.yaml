@@ -16,8 +16,19 @@ traits:
   - witchcraft
   - incantor
 
+# Determines whether the bot should forfeit after a period of time
+# Valid values : true, false
+# Default value : false
+auto_surrend_time: false
+
+# The minimum time to surrender (in seconds)
+# The ABSOLUTE minimum is 600 (10 minutes) ~ Beginning of phase 3-1 fight.
+# Do NOT input a low value as the bot will fail to surrend and may be locked in an unknown state.
+# Default value : 720 (12 mins)
+auto_surrend_min_time: 720
+
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 2
+version: 3
 # Version of the TFT set.
 set: 12

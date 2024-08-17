@@ -14,6 +14,7 @@ import sys
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
+import time
 
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
@@ -280,6 +281,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 logger.info("Queue lock released, likely loading into game now.")
             case GameState.IN_GAME:
                 logger.info("App state is in game, looping decision making and waiting for the exit button.")
+                gameStartTime = time.time()
+                logger.debug(f"gameStartTime is {gameStartTime}")
+                logger.debug(f"get_auto_surrend_time is {config.get_auto_surrend_time()}")
+                logger.debug(f"get_auto_surrend_min_time is {config.get_auto_surrend_min_time()}")
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
@@ -288,6 +293,20 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
+                    if config.get_auto_surrend_time() == True:
+                        # Calculate the end time and time taken
+                        gameCurrTime = time.time()
+                        gameElapsedTime = gameCurrTime - gameStartTime
+                        logger.debug(f"gameElapsedTime is {gameElapsedTime}")
+                        if gameElapsedTime > config.get_auto_surrend_min_time():
+                            logger.info(f"It's been at least {config.get_auto_surrend_min_time()} seconds, going to surrend...")
+                            await adb_instance.send_key(111) # Send escape key, this open the settings menu
+                            await asyncio.sleep(2)
+                            await adb_instance.click_button(Button.surrend) # Click the surrend button, this open a choice window
+                            await asyncio.sleep(2)
+                            await adb_instance.click_button(Button.check_surrend) # Confirm surrend
+                            await asyncio.sleep(5)
+                            break
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break
                 await adb_instance.click_button(Button.exit_now)

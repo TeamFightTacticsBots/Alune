@@ -256,3 +256,10 @@ class ADB:
         return await self._device.shell(
             f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
         )
+
+    async def send_key(self, keycode:int):
+        """
+        Send a keycode through adb shell
+        See https://gist.github.com/arjunv/2bbcca9a1a1c127749f8dcb6d36fb0bc
+        """
+        await self._device.shell(f"input keyevent {keycode}")

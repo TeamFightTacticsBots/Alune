@@ -121,3 +121,21 @@ class AluneConfig:
             A list of traits we look for.
         """
         return self._config["traits"]
+    
+    def get_auto_surrend_time(self) -> bool:
+        """
+        Get the surrender option the user wants.
+
+        Returns:
+            A Boolean that determines whether or not we should forfeit when possible.
+        """
+        return self._config["auto_surrend_time"]
+
+    def get_auto_surrend_min_time(self) -> int:
+        """
+        Get the surrender minimum time
+
+        Returns:
+            An Integer that represents the number of seconds in the game before surrendering
+        """
+        return self._config["auto_surrend_min_time"]
