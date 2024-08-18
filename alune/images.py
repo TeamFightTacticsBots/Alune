@@ -247,6 +247,18 @@ class Button:
         click_box=BoundingBox(1155, 595, 1242, 682),
         capture_area=BoundingBox(1128, 568, 1269, 709),
     )
+    white_orb = ImageButton(
+        click_box=BoundingBox(270, 110, 1090, 600),
+        capture_area=BoundingBox(270, 110, 1090, 600),
+    )
+    blue_orb = ImageButton(
+        click_box=BoundingBox(270, 110, 1090, 600),
+        capture_area=BoundingBox(270, 110, 1090, 600),
+    )
+    yellow_orb = ImageButton(
+        click_box=BoundingBox(270, 110, 1090, 600),
+        capture_area=BoundingBox(270, 110, 1090, 600),
+    )
 
     # Buttons without an image.
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))

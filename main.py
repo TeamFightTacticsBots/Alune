@@ -214,6 +214,21 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
 
     await buy_from_shop(adb_instance, config)
 
+    white_orbs_to_collect = screen.get_button_on_screen(screenshot, Button.white_orb)
+    if white_orbs_to_collect:
+        await adb_instance.click_image(white_orbs_to_collect, 0, False)
+        await asyncio.sleep(5)
+
+    blue_orbs_to_collect = screen.get_button_on_screen(screenshot, Button.blue_orb)
+    if blue_orbs_to_collect:
+        await adb_instance.click_image(blue_orbs_to_collect, 0, False)
+        await asyncio.sleep(5)
+    
+    yellow_orbs_to_collect = screen.get_button_on_screen(screenshot, Button.yellow_orb)
+    if yellow_orbs_to_collect:
+        await adb_instance.click_image(yellow_orbs_to_collect, 0, False)
+        await asyncio.sleep(5)
+
 
 async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
     """
