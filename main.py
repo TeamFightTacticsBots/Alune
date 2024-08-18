@@ -164,6 +164,9 @@ async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
             break
 
         await asyncio.sleep(0.25)
+    await asyncio.sleep(1)
+    # Close the shop
+    adb_instance.click_button(Button.store_button)
 
 
 async def take_game_decision(adb_instance: ADB, config: AluneConfig):

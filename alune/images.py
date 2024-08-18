@@ -261,6 +261,7 @@ class Button:
     )
 
     # Buttons without an image.
+    store_button = ClickButton(BoundingBox(1150, 600, 1240, 675))
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))
     store_card_two = ClickButton(BoundingBox(402, 47, 585, 272))
     store_card_three = ClickButton(BoundingBox(624, 47, 807, 272))
@@ -270,8 +271,10 @@ class Button:
     augment_two = ClickButton(BoundingBox(516, 120, 770, 520))
     augment_three = ClickButton(BoundingBox(863, 120, 1117, 520))
     augment_one_roll = ClickButton(BoundingBox(266, 602, 323, 659))
-    augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659))
+    augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659)) 
     augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
+
+    charmslot = ClickButton(BoundingBox(1070, 50, 1250, 280))
 
     @classmethod
     def get_store_cards(cls):
