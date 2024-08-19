@@ -282,6 +282,10 @@ class Button:
     augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659))
     augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
     surrend = ClickButton(BoundingBox(820, 585, 1035, 635))
+    
+    # Can't use image of these ones because of the theme of the board
+    expand_top_bar = ClickButton(BoundingBox(820, 5, 835, 15))
+    retract_top_bar = ClickButton(BoundingBox(795, 20, 815, 30))
 
     @classmethod
     def get_store_cards(cls):
