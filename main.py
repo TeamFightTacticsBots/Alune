@@ -144,6 +144,13 @@ async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
         config: An instance of the alune config to use.
     """
     screenshot = await adb_instance.get_screen()
+
+    # Open shop if closed
+    isShopClosed = screen.get_button_on_screen(screenshot, Button.shop_closed)
+    if isShopClosed:
+        await adb_instance.click_button(Button.store_button)
+        await asyncio.sleep(1)
+
     for trait in config.get_traits():
         search_result = screen.get_on_screen(
             image=screenshot,
@@ -165,8 +172,12 @@ async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
 
         await asyncio.sleep(0.25)
     await asyncio.sleep(1)
-    # Close the shop
-    adb_instance.click_button(Button.store_button)
+
+    # Close the shop, if open
+    isShopOpen = screen.get_button_on_screen(screenshot, Button.shop_open)
+    if isShopOpen:
+        await adb_instance.click_button(Button.store_button)
+        await asyncio.sleep(1)
 
 
 async def take_game_decision(adb_instance: ADB, config: AluneConfig):

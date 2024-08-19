@@ -259,6 +259,14 @@ class Button:
         click_box=BoundingBox(270, 110, 1090, 600),
         capture_area=BoundingBox(270, 110, 1090, 600),
     )
+    shop_closed = ImageButton(
+        click_box=BoundingBox(1145, 610, 1230, 670),
+        capture_area=BoundingBox(1115, 570, 1265, 700),
+    )
+    shop_open = ImageButton(
+        click_box=BoundingBox(1145, 610, 1230, 670),
+        capture_area=BoundingBox(1115, 570, 1265, 700),
+    )
 
     # Buttons without an image.
     store_button = ClickButton(BoundingBox(1150, 600, 1240, 675))
