@@ -163,8 +163,28 @@ class Trait(StrEnum):
         """
         return [cls.WITCHCRAFT, cls.INCANTOR]
 
+    ARCANA = auto()
+    BASTION = auto()
+    BLASTER = auto()
+    CHRONO = auto()
+    DRAGON = auto()
+    DRUID = auto()
+    ELDRITCH = auto()
     FAERIE = auto()
+    FROST = auto()
+    HONEYMANCY = auto()
+    HUNTER = auto()
     INCANTOR = auto()
+    MAGE = auto()
+    MULTISTRIKER = auto()
+    PORTAL = auto()
+    PRESERVER = auto()
+    PYRO = auto()
+    SCHOLAR = auto()
+    SHAPESHIFTER = auto()
+    SUGARCRAFT = auto()
+    VANGUARD = auto()
+    WARRIOR = auto()
     WITCHCRAFT = auto()
 
 
