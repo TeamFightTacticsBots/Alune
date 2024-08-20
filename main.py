@@ -14,7 +14,7 @@ import sys
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
-import time
+from threading import Timer
 
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
@@ -102,7 +102,7 @@ async def queue(adb_instance: ADB):
 
 
 _random = Random()
-
+rndDelay = 0
 
 async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     """
@@ -134,6 +134,15 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     logger.debug(f"Selecting augment {augment_idx + 1}")
     await adb_instance.click_button(augment)
     await asyncio.sleep(1)
+
+
+async def surrend_game(adb_instance: ADB):
+    await adb_instance.send_key(111) # Send escape key, this open the settings menu
+    await asyncio.sleep(2)
+    await adb_instance.click_button(Button.surrend) # Click the surrend button, this open a choice window
+    await asyncio.sleep(2)
+    await adb_instance.click_button(Button.check_surrend) # Confirm surrend
+    await asyncio.sleep(5)
 
 
 async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
@@ -281,10 +290,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 logger.info("Queue lock released, likely loading into game now.")
             case GameState.IN_GAME:
                 logger.info("App state is in game, looping decision making and waiting for the exit button.")
-                gameStartTime = time.time()
-                logger.debug(f"gameStartTime is {gameStartTime}")
-                logger.debug(f"get_auto_surrend_time is {config.get_auto_surrend_time()}")
-                logger.debug(f"get_auto_surrend_min_time is {config.get_auto_surrend_min_time()}")
+                # If the surrend option is enabled AND if a max random delay have been set, choose a random value..
+                if config.get_auto_surrend() == True and config.get_auto_surrend_random_delay() > 0:
+                    rndDelay = _random.randint(1, config.get_auto_surrend_random_delay())
+
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
@@ -293,19 +302,20 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
-                    if config.get_auto_surrend_time() == True:
-                        # Calculate the end time and time taken
-                        gameCurrTime = time.time()
-                        gameElapsedTime = gameCurrTime - gameStartTime
-                        logger.debug(f"gameElapsedTime is {gameElapsedTime}")
-                        if gameElapsedTime > config.get_auto_surrend_min_time():
-                            logger.info(f"It's been at least {config.get_auto_surrend_min_time()} seconds, going to surrend...")
-                            await adb_instance.send_key(111) # Send escape key, this open the settings menu
-                            await asyncio.sleep(2)
-                            await adb_instance.click_button(Button.surrend) # Click the surrend button, this open a choice window
-                            await asyncio.sleep(2)
-                            await adb_instance.click_button(Button.check_surrend) # Confirm surrend
-                            await asyncio.sleep(5)
+
+                    # If the surrend feature is enabled, we expand the top bar to check if we're in a surrend-possible phase
+                    if config.get_auto_surrend() == True:
+                        await adb_instance.click_button(Button.expand_top_bar)
+                        await asyncio.sleep(1)
+                        isPhase3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
+                        if isPhase3_2:
+                            if rndDelay == 0:
+                                logger.info("We're in a phase we can surrend. No delay have been set in config file. Surrendering now !")
+                                surrend_game(adb_instance)
+                            else:
+                                logger.info(f"We're in a phase we can surrend. A random delay have been set in config file. Surrendering in {rndDelay} second(s) !")
+                                surrendTimer = Timer(rndDelay, await surrend_game(adb_instance))
+                                surrendTimer.start()
                             break
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break

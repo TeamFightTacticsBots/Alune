@@ -16,16 +16,15 @@ traits:
   - witchcraft
   - incantor
 
-# Determines whether the bot should forfeit after a period of time
+# Determines whether the bot should forfeit as soon as possible (after round 3-1)
 # Valid values : true, false
 # Default value : false
-auto_surrend_time: false
+auto_surrend: false
 
-# The minimum time to surrender (in seconds)
-# The ABSOLUTE minimum is 600 (10 minutes) ~ Beginning of phase 3-1 fight.
-# Do NOT input a low value as the bot will fail to surrend and may be locked in an unknown state.
-# Default value : 720 (12 mins)
-auto_surrend_min_time: 720
+# The bot will pick a random number between 1 and auto_surrend_random_delay.
+# The bot will then add that number as a delay before it surrenders.
+# Default value : 0 (disabled = surrender as fast as possible)
+auto_surrend_random_delay: 0
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.

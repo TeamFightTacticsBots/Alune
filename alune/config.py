@@ -122,20 +122,20 @@ class AluneConfig:
         """
         return self._config["traits"]
     
-    def get_auto_surrend_time(self) -> bool:
+    def get_auto_surrend(self) -> bool:
         """
         Get the surrender option the user wants.
 
         Returns:
-            A Boolean that determines whether or not we should forfeit when possible.
+            A Boolean that determines whether or not we should surrend when possible.
         """
-        return self._config["auto_surrend_time"]
+        return self._config["auto_surrend"]
 
-    def get_auto_surrend_min_time(self) -> int:
+    def get_auto_surrend_random_delay(self) -> int:
         """
-        Get the surrender minimum time
+        Get the surrender delay
 
         Returns:
-            An Integer that represents the number of seconds in the game before surrendering
+            An Integer that represents the number of maximum seconds to randomly wait before surrendering when possible
         """
-        return self._config["auto_surrend_min_time"]
+        return self._config["auto_surrend_random_delay"]

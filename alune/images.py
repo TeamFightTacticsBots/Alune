@@ -140,6 +140,7 @@ class Image(StrEnum):
     SETTINGS = auto()
     PICK_AUGMENT = auto()
     CAROUSEL = auto()
+    PHASE_3_2_FULL = auto()
 
 
 class Trait(StrEnum):
@@ -283,9 +284,8 @@ class Button:
     augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
     surrend = ClickButton(BoundingBox(820, 585, 1035, 635))
     
-    # Can't use image of these ones because of the theme of the board
+    # Can't use image on this one because of the theme of the board
     expand_top_bar = ClickButton(BoundingBox(820, 5, 835, 15))
-    retract_top_bar = ClickButton(BoundingBox(795, 20, 815, 30))
 
     @classmethod
     def get_store_cards(cls):
