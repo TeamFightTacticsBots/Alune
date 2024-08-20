@@ -3,6 +3,7 @@ Module to handle the configuration for the bot.
 """
 
 import os.path
+from random import Random
 import shutil
 from typing import Any
 
@@ -11,6 +12,8 @@ from ruamel.yaml import YAML
 
 from alune import helpers
 from alune import images
+
+_random = Random()
 
 
 class AluneConfig:
@@ -122,20 +125,25 @@ class AluneConfig:
         """
         return self._config["traits"]
 
-    def get_auto_surrend(self) -> bool:
+    def get_auto_surrender(self) -> bool:
         """
         Get the surrender option the user wants.
 
         Returns:
             A Boolean that determines whether or not we should surrend when possible.
         """
-        return self._config["auto_surrend"]
+        return self._config["auto_surrender"]
 
-    def get_auto_surrend_random_delay(self) -> int:
+    def get_auto_surrender_random_delay(self) -> int:
         """
         Get the surrender delay
 
         Returns:
-            An Integer that represents the number of maximum seconds to randomly wait before surrendering when possible
+            An random Integer between [1 and auto_surrender_random_delay]
+            Returns 0 if feature disabled or negative value.
         """
-        return self._config["auto_surrend_random_delay"]
+        return (
+            0
+            if self._config["auto_surrender_random_delay"] <= 0
+            else _random.randint(1, self._config["auto_surrender_random_delay"])
+        )
