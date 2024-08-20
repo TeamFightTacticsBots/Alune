@@ -11,10 +11,10 @@ import json
 import os
 from random import Random
 import sys
+from threading import Timer
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
-from threading import Timer
 
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
@@ -104,6 +104,7 @@ async def queue(adb_instance: ADB):
 _random = Random()
 rndDelay = 0
 
+
 async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     """
     Checks for augments on the current screen and picks some if possible.
@@ -137,11 +138,11 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
 
 
 async def surrend_game(adb_instance: ADB):
-    await adb_instance.send_key(111) # Send escape key, this open the settings menu
+    await adb_instance.send_key(111)  # Send escape key, this open the settings menu
     await asyncio.sleep(2)
-    await adb_instance.click_button(Button.surrend) # Click the surrend button, this open a choice window
+    await adb_instance.click_button(Button.surrend)  # Click the surrend button, this open a choice window
     await asyncio.sleep(2)
-    await adb_instance.click_button(Button.check_surrend) # Confirm surrend
+    await adb_instance.click_button(Button.check_surrend)  # Confirm surrend
     await asyncio.sleep(5)
 
 
@@ -310,10 +311,14 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                         isPhase3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
                         if isPhase3_2:
                             if rndDelay == 0:
-                                logger.info("We're in a phase we can surrend. No delay have been set in config file. Surrendering now !")
+                                logger.info(
+                                    "We're in a phase we can surrend. No delay have been set in config file. Surrendering now !"
+                                )
                                 surrend_game(adb_instance)
                             else:
-                                logger.info(f"We're in a phase we can surrend. A random delay have been set in config file. Surrendering in {rndDelay} second(s) !")
+                                logger.info(
+                                    f"We're in a phase we can surrend. A random delay have been set in config file. Surrendering in {rndDelay} second(s) !"
+                                )
                                 surrendTimer = Timer(rndDelay, await surrend_game(adb_instance))
                                 surrendTimer.start()
                             break

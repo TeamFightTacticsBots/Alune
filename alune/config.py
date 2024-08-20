@@ -121,7 +121,7 @@ class AluneConfig:
             A list of traits we look for.
         """
         return self._config["traits"]
-    
+
     def get_auto_surrend(self) -> bool:
         """
         Get the surrender option the user wants.
