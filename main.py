@@ -102,7 +102,6 @@ async def queue(adb_instance: ADB):
 
 
 _random = Random()
-rndDelay = 0
 
 
 async def handle_augments(screenshot: ndarray, adb_instance: ADB):
@@ -138,6 +137,12 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
 
 
 async def surrend_game(adb_instance: ADB):
+    """
+    Surrends the current game
+
+    Args:
+        adb_instance: The adb instance to process the surrend phase.
+    """
     await adb_instance.send_key(111)  # Send escape key, this open the settings menu
     await asyncio.sleep(2)
     await adb_instance.click_button(Button.surrend)  # Click the surrend button, this open a choice window
@@ -291,9 +296,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 logger.info("Queue lock released, likely loading into game now.")
             case GameState.IN_GAME:
                 logger.info("App state is in game, looping decision making and waiting for the exit button.")
+                _random_delay = 0
                 # If the surrend option is enabled AND if a max random delay have been set, choose a random value..
-                if config.get_auto_surrend() == True and config.get_auto_surrend_random_delay() > 0:
-                    rndDelay = _random.randint(1, config.get_auto_surrend_random_delay())
+                if config.get_auto_surrend() and config.get_auto_surrend_random_delay() > 0:
+                    _random_delay = _random.randint(1, config.get_auto_surrend_random_delay())
 
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
@@ -304,23 +310,24 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
 
-                    # If the surrend feature is enabled, we expand the top bar to check if we're in a surrend-possible phase
-                    if config.get_auto_surrend() == True:
+                    # If the surrend feature is enabled, we expand the top bar to check if
+                    # we're in a surrend-possible phase
+                    if config.get_auto_surrend():
                         await adb_instance.click_button(Button.expand_top_bar)
                         await asyncio.sleep(1)
-                        isPhase3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
-                        if isPhase3_2:
-                            if rndDelay == 0:
-                                logger.info(
-                                    "We're in a phase we can surrend. No delay have been set in config file. Surrendering now !"
-                                )
+                        is_phase_3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
+                        if is_phase_3_2:
+                            if _random_delay == 0:
+                                logger.info("We're in a phase we can surrend ! No delay have been set in config file.")
+                                logger.info("Surrendering now !")
                                 surrend_game(adb_instance)
                             else:
                                 logger.info(
-                                    f"We're in a phase we can surrend. A random delay have been set in config file. Surrendering in {rndDelay} second(s) !"
+                                    "We're in a phase we can surrend. A random delay have been set in config file."
                                 )
-                                surrendTimer = Timer(rndDelay, await surrend_game(adb_instance))
-                                surrendTimer.start()
+                                logger.info("Surrendering in {_random_delay} second(s) !")
+                                surrend_timer = Timer(_random_delay, await surrend_game(adb_instance))
+                                surrend_timer.start()
                             break
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break
