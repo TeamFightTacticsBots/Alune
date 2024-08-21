@@ -144,6 +144,6 @@ class AluneConfig:
         """
         return (
             0
-            if self._config["auto_surrender_random_delay"] <= 0
+            if self._config["auto_surrender_random_delay"] is None or self._config["auto_surrender_random_delay"] <= 0
             else _random.randint(1, self._config["auto_surrender_random_delay"])
         )

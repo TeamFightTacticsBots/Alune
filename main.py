@@ -334,7 +334,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
-                    if check_surrender_state(adb_instance, screenshot, config):
+                    if await check_surrender_state(adb_instance, screenshot, config):
                         break
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break
