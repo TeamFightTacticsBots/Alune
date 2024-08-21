@@ -476,6 +476,7 @@ async def main():
     await check_version()
 
     adb_instance = ADB()
+
     await adb_instance.load(config.get_adb_port())
     if not adb_instance.is_connected():
         logger.error("There is no ADB device ready. Exiting.")

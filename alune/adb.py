@@ -5,6 +5,7 @@ Module for all ADB (Android Debug Bridge) related methods.
 import os.path
 import random
 
+from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
@@ -12,6 +13,7 @@ import cv2
 from loguru import logger
 import numpy
 from numpy import ndarray
+import psutil
 
 from alune import helpers
 from alune.images import ClickButton
@@ -65,7 +67,33 @@ class ADB:
 
         self._rsa_signer = PythonRSASigner(pub=public_key, priv=private_key)
 
-    async def _connect_to_device(self, port: int):
+    async def scan_localhost_devices(self) -> int | None:
+        """
+        Try to connect with a fast abort on every open localhost port.
+
+        Returns:
+            The first valid open ADB port or None if there wasn't one.
+        """
+        logger.info("Scanning local ports for an open ADB connection...")
+
+        connections = [
+            conn for conn in psutil.net_connections("tcp4") if conn.laddr.port >= 5555 and conn.status == "LISTEN"
+        ]
+        for conn in connections:
+            logger.debug(f"Scanning port {conn.laddr.port} for ADB...")
+            try:
+                adb_device = AdbDeviceTcp("localhost", port=conn.laddr.port, default_transport_timeout_s=0.5)
+                if adb_device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=0.5, read_timeout_s=0.5):
+                    adb_device.close()
+                    return conn.laddr.port
+            # Reason for disable: The code above can throw a lot of different exceptions, this is the simplest solution.
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.debug(f"Port {conn.laddr.port} threw '{e}'.")
+
+        logger.warning("No local device was found. Make sure ADB is enabled in your emulator's settings.")
+        return None
+
+    async def _connect_to_device(self, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
         """
@@ -78,11 +106,15 @@ class ADB:
                 return
         except OSError:
             self._device = None
-        logger.warning(f"Failed to connect to ADB session with device localhost:{port}")
-        # Silly hack to attempt to fall back on port 5556,
-        # in case the default port was in use when their adb session started
-        if port == 5555:
-            await self._connect_to_device(port + 1)
+
+        logger.warning(f"Failed to connect to ADB session with device localhost:{port}.")
+        if not retry_with_scan:
+            self._device = None
+            return
+
+        open_adb_port = await self.scan_localhost_devices()
+        if open_adb_port:
+            await self._connect_to_device(open_adb_port, retry_with_scan=False)
 
     def is_connected(self) -> bool:
         """
