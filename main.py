@@ -135,7 +135,7 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     await asyncio.sleep(1)
 
 
-async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: AluneConfig):
+async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: AluneConfig) -> bool:
     """
     Check if we're able to surrender from the current game state.
 
