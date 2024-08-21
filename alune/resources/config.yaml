@@ -16,8 +16,18 @@ traits:
   - witchcraft
   - incantor
 
+# Determines whether the bot should surrender as soon as possible (after round 3-1)
+# Valid values : true, false
+# Default value : false
+surrender_early: false
+
+# The bot will pick a random number between 1 and surrender_random_delay.
+# The bot will then add that number as a delay before it surrenders.
+# Default value : 0 (disabled = surrender as fast as possible)
+surrender_random_delay: 0
+
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 2
+version: 3
 # Version of the TFT set.
 set: 12

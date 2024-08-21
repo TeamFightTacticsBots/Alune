@@ -256,3 +256,9 @@ class ADB:
         return await self._device.shell(
             f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
         )
+
+    async def go_back(self):
+        """
+        Send a back key press event to the device.
+        """
+        await self._device.shell("input keyevent 4")

@@ -135,6 +135,47 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
     await asyncio.sleep(1)
 
 
+async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: AluneConfig) -> bool:
+    """
+    Check if we're able to surrender from the current game state.
+
+    Args:
+        adb_instance: The adb instance to process the surrender phase.
+        screenshot: The current screen.
+        config: An instance of the alune config to use.
+
+    Returns:
+        Whether or not we're able to surrender.
+    """
+    if not config.should_surrender():
+        return False
+    await adb_instance.click_button(Button.expand_top_bar)
+    await asyncio.sleep(1)
+    is_phase_3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
+    if not is_phase_3_2:
+        return False
+    surrender_delay = config.get_surrender_delay()
+    logger.info(f"Surrendering the game in {surrender_delay} seconds.")
+    await asyncio.sleep(surrender_delay)
+    surrender_game(adb_instance)
+    return True
+
+
+async def surrender_game(adb_instance: ADB):
+    """
+    Surrenders the current game.
+
+    Args:
+        adb_instance: The adb instance to process the surrender phase.
+    """
+    await adb_instance.go_back()
+    await asyncio.sleep(2)
+    await adb_instance.click_button(Button.surrender)
+    await asyncio.sleep(2)
+    await adb_instance.click_button(Button.check_surrender)
+    await asyncio.sleep(5)
+
+
 async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
     """
     Checks the shop for traits and purchases it if found.
@@ -288,6 +329,8 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                     game_state = await get_game_state(screenshot)
+                    if await check_surrender_state(adb_instance, screenshot, config):
+                        break
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break
                 await adb_instance.click_button(Button.exit_now)

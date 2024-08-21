@@ -140,6 +140,7 @@ class Image(StrEnum):
     SETTINGS = auto()
     PICK_AUGMENT = auto()
     CAROUSEL = auto()
+    PHASE_3_2_FULL = auto()
 
 
 class Trait(StrEnum):
@@ -245,6 +246,7 @@ class Button:
         capture_area=BoundingBox(520, 400, 775, 425),
     )
     check = ImageButton(BoundingBox(555, 425, 725, 470))
+    check_surrender = ImageButton(BoundingBox(650, 420, 825, 470))
     check_choice = ImageButton(BoundingBox(655, 423, 829, 472))
     normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
     buy_xp = ImageButton(
@@ -280,6 +282,10 @@ class Button:
     augment_one_roll = ClickButton(BoundingBox(266, 602, 323, 659))
     augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659))
     augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
+    surrender = ClickButton(BoundingBox(820, 585, 1035, 635))
+
+    # Can't use image on this one because of the theme of the board
+    expand_top_bar = ClickButton(BoundingBox(820, 5, 835, 15))
 
     @classmethod
     def get_store_cards(cls):
