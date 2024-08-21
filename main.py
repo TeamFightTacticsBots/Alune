@@ -11,7 +11,6 @@ import json
 import os
 from random import Random
 import sys
-from threading import Timer
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
@@ -138,46 +137,42 @@ async def handle_augments(screenshot: ndarray, adb_instance: ADB):
 
 async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: AluneConfig):
     """
-    Check if we're able to surrend from the current game state
+    Check if we're able to surrender from the current game state.
 
     Args:
-        adb_instance: The adb instance to process the surrend phase.
+        adb_instance: The adb instance to process the surrender phase.
         screenshot: The current screen.
         config: An instance of the alune config to use.
+
+    Returns:
+        Whether or not we're able to surrender.
     """
-    # If the surrender feature is enabled, we expand the top bar to check if
-    # we're in a surrend-possible phase
-    if config.get_auto_surrender():
-        await adb_instance.click_button(Button.expand_top_bar)
-        await asyncio.sleep(1)
-        is_phase_3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
-        if is_phase_3_2:
-            random_delay = config.get_auto_surrender_random_delay()
-            if random_delay == 0:
-                logger.info("We're in a phase we can surrend ! No delay have been set in config file.")
-                logger.info("Surrendering now !")
-                surrender_game(adb_instance)
-            else:
-                logger.info("We're in a phase we can surrend. A random delay have been set in config file.")
-                logger.info(f"Surrendering in {random_delay} second(s) !")
-                surrender_timer = Timer(random_delay, await surrender_game(adb_instance))
-                surrender_timer.start()
-            return True
-    return False
+    if not config.should_surrender():
+        return False
+    await adb_instance.click_button(Button.expand_top_bar)
+    await asyncio.sleep(1)
+    is_phase_3_2 = screen.get_on_screen(screenshot, Image.PHASE_3_2_FULL)
+    if not is_phase_3_2:
+        return False
+    surrender_delay = config.get_surrender_delay()
+    logger.info(f"Surrendering the game in {surrender_delay} seconds.")
+    await asyncio.sleep(surrender_delay)
+    surrender_game(adb_instance)
+    return True
 
 
 async def surrender_game(adb_instance: ADB):
     """
-    Surrends the current game
+    Surrenders the current game.
 
     Args:
-        adb_instance: The adb instance to process the surrend phase.
+        adb_instance: The adb instance to process the surrender phase.
     """
-    await adb_instance.send_key(111)  # Send escape key, this open the settings menu
+    await adb_instance.go_back()
     await asyncio.sleep(2)
-    await adb_instance.click_button(Button.surrender)  # Click the surrend button, this open a choice window
+    await adb_instance.click_button(Button.surrender)
     await asyncio.sleep(2)
-    await adb_instance.click_button(Button.check_surrender)  # Confirm surrend
+    await adb_instance.click_button(Button.check_surrender)
     await asyncio.sleep(5)
 
 

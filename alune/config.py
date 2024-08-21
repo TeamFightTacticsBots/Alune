@@ -125,25 +125,24 @@ class AluneConfig:
         """
         return self._config["traits"]
 
-    def get_auto_surrender(self) -> bool:
+    def should_surrender(self) -> bool:
         """
         Get the surrender option the user wants.
 
         Returns:
-            A Boolean that determines whether or not we should surrend when possible.
+            Whether or not we should surrender when possible.
         """
-        return self._config["auto_surrender"]
+        return self._config["surrender_early"]
 
-    def get_auto_surrender_random_delay(self) -> int:
+    def get_surrender_delay(self) -> int:
         """
         Get the surrender delay
 
         Returns:
-            An random Integer between [1 and auto_surrender_random_delay]
+            An random Integer between [1 and surrender_random_delay]
             Returns 0 if feature disabled or negative value.
         """
-        return (
-            0
-            if self._config["auto_surrender_random_delay"] is None or self._config["auto_surrender_random_delay"] <= 0
-            else _random.randint(1, self._config["auto_surrender_random_delay"])
-        )
+        delay_upper_bound = self._config["surrender_delay"] or 0
+        if delay_upper_bound <= 0:
+            return 0
+        return _random.randint(1, delay_upper_bound)

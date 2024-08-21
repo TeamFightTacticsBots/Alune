@@ -257,9 +257,8 @@ class ADB:
             f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
         )
 
-    async def send_key(self, keycode: int):
+    async def go_back(self):
         """
-        Send a keycode through adb shell
-        See https://gist.github.com/arjunv/2bbcca9a1a1c127749f8dcb6d36fb0bc
+        Send a back key press event to the device.
         """
-        await self._device.shell(f"input keyevent {keycode}")
+        await self._device.shell("input keyevent 4")
