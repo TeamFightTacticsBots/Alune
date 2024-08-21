@@ -3,11 +3,6 @@
 # Valid levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 log_level: "INFO"
 
-# The ADB port your emulator is open on.
-# Should be 5555 in most cases. If you're unable to get this to work,
-# visit https://github.com/TeamFightTacticsBots/Alune/wiki/ADB-Port for more information.
-adb_port: 5555
-
 # The traits you want the bot to roll for.
 # The trait names are almost as written in-game, with spaces replaced by _ and . and : being ignored.
 # For example: admin, star_guardian, mecha_prime, lasercorps
