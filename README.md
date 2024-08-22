@@ -29,6 +29,7 @@ We will never support playing ranked with it. We also do not encourage you to le
 3. Buys experience and shop cards
 4. Rolls and buys augments
 5. Walks around on carousel rounds
+6. Capable of surrendering early for faster TFT pass experience
 
 You can find planned and potential future features on our [Features wiki page](https://github.com/TeamFightTacticsBots/Alune/wiki/Features).
 
@@ -40,7 +41,6 @@ The TFT bot is available as a Windows executable for convenience. Running from s
 
 1. Download any Android emulator you find trustworthy that also has reasonable ADB support.
    1. Please refer to the [wiki page about emulators](https://github.com/TeamFightTacticsBots/Alune/wiki/Emulators) for more information.
-   2. Some emulators may need adjustment of the port our ADB utility connects to. The place to adjust it is - after running the bot once - in `alune-output/config.yml`.
 2. Install the TFT APK by downloading it from [APKMirror](https://www.apkmirror.com/apk/riot-games-inc/teamfight-tactics-league-of-legends-strategy-game/) and dragging it into your emulator.
    1. If drag and drop does not work, review your emulator's documentation on how to install APK files.  
    2. While the bot should work with the Google Play version, **we discourage using Google Play**. It may add overlays the bot does not check for. It is also generally good security practice to **not** enter your Google credentials in emulators.
