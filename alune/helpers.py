@@ -57,24 +57,32 @@ def get_resource_path(relative_path: str | None = None):
     return str(path)
 
 
-def is_version_string_newer(version_one: str, version_two: str):
+def is_version_string_newer(version_one: str, version_two: str, ignore_minor_mismatch: bool = False):
     """
     Checks if version_one is newer than version_two.
 
     Args:
-        version_one: The semantic version string to check
-        version_two: The semantic version string to check against
+        version_one: The semantic version string to check.
+        version_two: The semantic version string to check against.
+        ignore_minor_mismatch: Optional, whether to ignore that the minor version mismatches. Defaults to false.
 
     Returns:
         Whether version_one is newer than version_two.
     """
     version_one_parts = version_one.split(".")
     version_two_parts = version_two.split(".")
+    version_part_amount = min(len(version_one_parts), len(version_two_parts))
 
-    for i in range(min(len(version_one_parts), len(version_two_parts))):
+    for i in range(version_part_amount):
         try:
-            if int(version_one_parts[i]) > int(version_two_parts[i]):
-                return True
+            if int(version_one_parts[i]) <= int(version_two_parts[i]):
+                continue
+
+            if ignore_minor_mismatch and i == version_part_amount - 1:
+                logger.warning("There is a newer minor version of TFT available. Please update as soon as possible.")
+                return False
+
+            return True
         except ValueError:
             logger.warning(
                 f"We could not check version {version_one} against {version_two}. "
