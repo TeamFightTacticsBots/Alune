@@ -145,7 +145,7 @@ async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: 
         config: An instance of the alune config to use.
 
     Returns:
-        Whether or not we're able to surrender.
+        Whether we're able to surrender.
     """
     if not config.should_surrender():
         return False
@@ -157,7 +157,7 @@ async def check_surrender_state(adb_instance: ADB, screenshot: ndarray, config: 
     surrender_delay = config.get_surrender_delay()
     logger.info(f"Surrendering the game in {surrender_delay} seconds.")
     await asyncio.sleep(surrender_delay)
-    surrender_game(adb_instance)
+    await surrender_game(adb_instance)
     return True
 
 
@@ -476,6 +476,7 @@ async def main():
     await check_version()
 
     adb_instance = ADB()
+
     await adb_instance.load(config.get_adb_port())
     if not adb_instance.is_connected():
         logger.error("There is no ADB device ready. Exiting.")

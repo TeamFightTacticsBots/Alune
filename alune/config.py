@@ -48,6 +48,7 @@ class AluneConfig:
 
             if _config_resource.get("set") > self._config.get("set", 11):
                 logger.warning("There is a new set, updating traits as well.")
+                self._config["set"] = _config_resource["set"]
                 self._config["traits"] = _config_resource["traits"]
 
             _config_resource.update(
