@@ -131,7 +131,7 @@ class AluneConfig:
         Get the surrender option the user wants.
 
         Returns:
-            Whether or not we should surrender when possible.
+            Whether we should surrender when possible.
         """
         return self._config["surrender_early"]
 
@@ -143,7 +143,7 @@ class AluneConfig:
             An random Integer between [1 and surrender_random_delay]
             Returns 0 if feature disabled or negative value.
         """
-        delay_upper_bound = self._config["surrender_delay"] or 0
+        delay_upper_bound = self._config["surrender_random_delay"] or 0
         if delay_upper_bound <= 0:
             return 0
         return _random.randint(1, delay_upper_bound)
