@@ -79,6 +79,10 @@ class ADB:
         connections = [
             conn for conn in psutil.net_connections("tcp4") if conn.laddr.port >= 5555 and conn.status == "LISTEN"
         ]
+
+        if len(connections) > 9:
+            logger.warning(f"There are {len(connections)} open ports, scanning may take a while.")
+
         for conn in connections:
             logger.debug(f"Scanning port {conn.laddr.port} for ADB...")
             try:
