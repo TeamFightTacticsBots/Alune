@@ -8,6 +8,8 @@ from enum import auto
 from enum import StrEnum
 import importlib.metadata
 import json
+import time
+import keyboard
 import os
 from random import Random
 import sys
@@ -30,6 +32,8 @@ from alune.images import Image
 from alune.screen import BoundingBox
 from alune.screen import ImageSearchResult
 
+PAUSE_LOGIC = False
+PLAY_NEXT_GAME = True
 
 class GameState(StrEnum):
     """
@@ -283,7 +287,6 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         logger.info("Reconnected to device, continuing main loop.")
         await loop_disconnect_wrapper(adb_instance, config)
 
-
 async def loop(adb_instance: ADB, config: AluneConfig):
     """
     The main app loop logic.
@@ -293,6 +296,12 @@ async def loop(adb_instance: ADB, config: AluneConfig):
         config: An instance of the alune config to use.
     """
     while True:
+        delay_next_game()
+
+        if PAUSE_LOGIC:
+            time.sleep(5)
+            continue
+
         if not await adb_instance.is_tft_active():
             logger.info("TFT was not in the foreground, setting it as active.")
             await adb_instance.start_tft_app()
@@ -332,6 +341,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 screenshot = await adb_instance.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
+                    if PAUSE_LOGIC:
+                        time.sleep(5)
+                        continue
+
                     await take_game_decision(adb_instance, config)
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
@@ -463,6 +476,7 @@ async def main():
     logs_path = helpers.get_application_path("alune-output/logs")
     os.makedirs(logs_path, exist_ok=True)
     logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
+    setup_hotkeys()
 
     config = AluneConfig()
     if config.get_log_level() != "DEBUG":
@@ -494,6 +508,50 @@ async def main():
 
     await loop_disconnect_wrapper(adb_instance, config)
 
+def delay_next_game():
+    wait_counter = 0
+    while not PLAY_NEXT_GAME:
+        sleep_time = 15
+        # Don't print it every iteration
+        if wait_counter > 0 and (sleep_time * wait_counter) % 30 == 0:
+            logger.debug(f"Play next game still disabled after {sleep_time * wait_counter} seconds")
+        time.sleep(sleep_time)
+        wait_counter = wait_counter + 1
+
+def toggle_pause() -> None:
+    """
+    Toggles whether the bots logic evaluation should pause.
+    *Note:* This does not entirely stop the bot, but does stop various state changes that can be annoying if you're
+    trying to manually interact with it.
+    """
+    global PAUSE_LOGIC
+    logger.debug(f"alt+p pressed, toggling pause from {PAUSE_LOGIC} to {not PAUSE_LOGIC}")
+    PAUSE_LOGIC = not PAUSE_LOGIC
+    if PAUSE_LOGIC:
+        logger.warning("Bot now paused, remember to unpause to continue botting!")
+    else:
+        logger.warning("Bot playing again!")
+
+
+def toggle_play_next_game() -> None:
+    """
+    Toggles whether the bots logic evaluation should start a new game after this finishes.
+    *Note:* This does not entirely stop the bot, but will stop it from starting a new game.
+    """
+    global PLAY_NEXT_GAME
+    logger.debug(f"alt+n pressed, toggling pause from {PLAY_NEXT_GAME} to {not PLAY_NEXT_GAME}")
+    PLAY_NEXT_GAME = not PLAY_NEXT_GAME
+    if not PLAY_NEXT_GAME:
+        logger.warning("Bot will not queue a new game when a lobby is detected!")
+    else:
+        logger.warning("Bot will queue a new game when in lobby!")
+
+def setup_hotkeys() -> None:
+    """
+    Setup hotkey listeners
+    """
+    keyboard.add_hotkey("alt+p", lambda: toggle_pause())  # pylint: disable=unnecessary-lambda
+    keyboard.add_hotkey("alt+n", lambda: toggle_play_next_game())  # pylint: disable=unnecessary-lambda
 
 if __name__ == "__main__":
     try:
