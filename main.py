@@ -9,7 +9,6 @@ from enum import StrEnum
 import importlib.metadata
 import json
 import time
-import keyboard
 import os
 from random import Random
 import sys
@@ -20,6 +19,7 @@ import urllib.request
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
 from loguru import logger
+import keyboard
 from numpy import ndarray
 
 from alune import helpers
@@ -509,6 +509,9 @@ async def main():
     await loop_disconnect_wrapper(adb_instance, config)
 
 def delay_next_game():
+    """
+    Checks whether to delay the next game based on the PLAY_NEXT_GAME variable
+    """
     wait_counter = 0
     while not PLAY_NEXT_GAME:
         sleep_time = 15
@@ -524,7 +527,7 @@ def toggle_pause() -> None:
     *Note:* This does not entirely stop the bot, but does stop various state changes that can be annoying if you're
     trying to manually interact with it.
     """
-    global PAUSE_LOGIC
+    global PAUSE_LOGIC # pylint: disable=global-statement
     logger.debug(f"alt+p pressed, toggling pause from {PAUSE_LOGIC} to {not PAUSE_LOGIC}")
     PAUSE_LOGIC = not PAUSE_LOGIC
     if PAUSE_LOGIC:
@@ -538,7 +541,7 @@ def toggle_play_next_game() -> None:
     Toggles whether the bots logic evaluation should start a new game after this finishes.
     *Note:* This does not entirely stop the bot, but will stop it from starting a new game.
     """
-    global PLAY_NEXT_GAME
+    global PLAY_NEXT_GAME # pylint: disable=global-statement
     logger.debug(f"alt+n pressed, toggling pause from {PLAY_NEXT_GAME} to {not PLAY_NEXT_GAME}")
     PLAY_NEXT_GAME = not PLAY_NEXT_GAME
     if not PLAY_NEXT_GAME:
