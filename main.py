@@ -35,6 +35,7 @@ from alune.screen import ImageSearchResult
 PAUSE_LOGIC = False
 PLAY_NEXT_GAME = True
 
+
 class GameState(StrEnum):
     """
     State the game or app is in.
@@ -287,6 +288,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         logger.info("Reconnected to device, continuing main loop.")
         await loop_disconnect_wrapper(adb_instance, config)
 
+
 async def loop(adb_instance: ADB, config: AluneConfig):
     """
     The main app loop logic.
@@ -508,6 +510,7 @@ async def main():
 
     await loop_disconnect_wrapper(adb_instance, config)
 
+
 def delay_next_game():
     """
     Checks whether to delay the next game based on the PLAY_NEXT_GAME variable
@@ -521,13 +524,14 @@ def delay_next_game():
         time.sleep(sleep_time)
         wait_counter = wait_counter + 1
 
+
 def toggle_pause() -> None:
     """
     Toggles whether the bots logic evaluation should pause.
     *Note:* This does not entirely stop the bot, but does stop various state changes that can be annoying if you're
     trying to manually interact with it.
     """
-    global PAUSE_LOGIC # pylint: disable=global-statement
+    global PAUSE_LOGIC  # pylint: disable=global-statement
     logger.debug(f"alt+p pressed, toggling pause from {PAUSE_LOGIC} to {not PAUSE_LOGIC}")
     PAUSE_LOGIC = not PAUSE_LOGIC
     if PAUSE_LOGIC:
@@ -541,7 +545,7 @@ def toggle_play_next_game() -> None:
     Toggles whether the bots logic evaluation should start a new game after this finishes.
     *Note:* This does not entirely stop the bot, but will stop it from starting a new game.
     """
-    global PLAY_NEXT_GAME # pylint: disable=global-statement
+    global PLAY_NEXT_GAME  # pylint: disable=global-statement
     logger.debug(f"alt+n pressed, toggling pause from {PLAY_NEXT_GAME} to {not PLAY_NEXT_GAME}")
     PLAY_NEXT_GAME = not PLAY_NEXT_GAME
     if not PLAY_NEXT_GAME:
@@ -549,12 +553,14 @@ def toggle_play_next_game() -> None:
     else:
         logger.warning("Bot will queue a new game when in lobby!")
 
+
 def setup_hotkeys() -> None:
     """
     Setup hotkey listeners
     """
     keyboard.add_hotkey("alt+p", lambda: toggle_pause())  # pylint: disable=unnecessary-lambda
     keyboard.add_hotkey("alt+n", lambda: toggle_play_next_game())  # pylint: disable=unnecessary-lambda
+
 
 if __name__ == "__main__":
     try:
