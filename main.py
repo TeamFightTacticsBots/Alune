@@ -8,18 +8,18 @@ from enum import auto
 from enum import StrEnum
 import importlib.metadata
 import json
-import time
 import os
 from random import Random
 import sys
+import time
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
 
 from adb_shell.exceptions import TcpTimeoutException
 import google_play_scraper
-from loguru import logger
 import keyboard
+from loguru import logger
 from numpy import ndarray
 
 from alune import helpers
