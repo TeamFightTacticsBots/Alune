@@ -11,7 +11,6 @@ import json
 import os
 from random import Random
 import sys
-import time
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
@@ -298,10 +297,10 @@ async def loop(adb_instance: ADB, config: AluneConfig):
         config: An instance of the alune config to use.
     """
     while True:
-        delay_next_game()
+        await delay_next_game()
 
         if PAUSE_LOGIC:
-            time.sleep(5)
+            await asyncio.sleep(5)
             continue
 
         if not await adb_instance.is_tft_active():
@@ -344,7 +343,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
                     if PAUSE_LOGIC:
-                        time.sleep(5)
+                        await asyncio.sleep(5)
                         continue
 
                     await take_game_decision(adb_instance, config)
@@ -511,7 +510,7 @@ async def main():
     await loop_disconnect_wrapper(adb_instance, config)
 
 
-def delay_next_game():
+async def delay_next_game():
     """
     Checks whether to delay the next game based on the PLAY_NEXT_GAME variable
     """
@@ -521,7 +520,7 @@ def delay_next_game():
         # Don't print it every iteration
         if wait_counter > 0 and (sleep_time * wait_counter) % 30 == 0:
             logger.debug(f"Play next game still disabled after {sleep_time * wait_counter} seconds")
-        time.sleep(sleep_time)
+        await asyncio.sleep(sleep_time)
         wait_counter = wait_counter + 1
 
 
