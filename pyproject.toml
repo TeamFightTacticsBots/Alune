@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alune"
-version = "0.1.4"
+version = "0.1.5"
 authors = [
   {name = "akshualy"},
   {name = "Detergent13"},
@@ -21,6 +21,7 @@ dependencies = [
     "loguru==0.7.2",
     "ruamel.yaml==0.18.6",
     "psutil==6.0.0",
+    "keyboard==0.13.5",
 ]
 
 [project.optional-dependencies]
