@@ -522,6 +522,17 @@ async def main():
     await check_phone_preconditions(adb_instance)
     logger.info("Connected to ADB and device is set up correctly, starting main loop.")
 
+    if config.should_surrender():
+        logger.info(
+            "The bot will surrender early. "
+            "This is recommended for passes that get experience per game, like the basic TFT passes."
+        )
+    else:
+        logger.info(
+            "The bot will play out games. "
+            "This is recommended for passes that get experience for play time, like the event passes."
+        )
+
     await loop_disconnect_wrapper(adb_instance, config)
 
 
