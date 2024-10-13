@@ -379,7 +379,7 @@ async def get_game_state(screenshot: ndarray) -> GameStateImageResult | None:
     if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.BACK):
         return GameStateImageResult(GameState.MAIN_MENU)
 
-    if image_result := screen.get_button_on_screen(screenshot, Button.normal_game):
+    if image_result := screen.get_on_screen(screenshot, Image.NORMAL_GAME):
         return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
 
     if screen.get_button_on_screen(screenshot, Button.check):

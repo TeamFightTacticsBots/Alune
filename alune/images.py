@@ -142,6 +142,7 @@ class Image(StrEnum):
     CAROUSEL = auto()
     COLLAPSE_TOP_BAR = auto()
     PHASE_3_2_FULL = auto()
+    NORMAL_GAME = auto()
 
 
 class Trait(StrEnum):
@@ -249,7 +250,6 @@ class Button:
     check = ImageButton(BoundingBox(555, 425, 725, 470))
     check_surrender = ImageButton(BoundingBox(650, 420, 825, 470))
     check_choice = ImageButton(BoundingBox(655, 423, 829, 472))
-    normal_game = ImageButton(BoundingBox(50, 250, 275, 580))
     buy_xp = ImageButton(
         click_box=BoundingBox(35, 593, 124, 682),
         capture_area=BoundingBox(9, 550, 170, 708),
