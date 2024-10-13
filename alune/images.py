@@ -192,6 +192,44 @@ class Trait(StrEnum):
     WITCHCRAFT = auto()
 
 
+class DawnOfHeroesTrait(StrEnum):
+    """
+    The same as ImageEnum, but images are intentionally in a different place and will
+    change with each set.
+    """
+
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
+        return helpers.get_resource_path(f"alune/images/traits/dawn_of_heroes/{name.lower()}.png")
+
+    @classmethod
+    def get_default_traits(cls):
+        """
+        Gets a list of default traits the bot should use.
+
+        Returns:
+            A list of the traits to be played by default, if the user misconfigures.
+        """
+        return [cls.DAWNBRINGER]
+
+    # Dawn of Heroes
+    ASSASSIN = auto()
+    BRAWLER = auto()
+    CANNONEER = auto()
+    CAVALIER = auto()
+    DAWNBRINGER = auto()
+    DRACONIC = auto()
+    FORGOTTEN = auto()
+    HELLION = auto()
+    NIGHTBRINGER = auto()
+    RANGER = auto()
+    REDEEMED = auto()
+    SENTINEL = auto()
+    SKIRMISHER = auto()
+    SPELLWEAVER = auto()
+
+
 class ClickButton:  # pylint: disable=too-few-public-methods
     """
     A button which can and will be clicked.

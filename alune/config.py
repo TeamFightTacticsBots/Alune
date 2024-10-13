@@ -68,8 +68,8 @@ class AluneConfig:
         The user should be notified of any invalid configurations.
         """
         self._sanitize_log_level()
-        self._sanitize_traits()
         self._sanitize_game_mode()
+        self._sanitize_traits()
 
     def _sanitize_log_level(self):
         """
@@ -80,26 +80,6 @@ class AluneConfig:
             logger.warning(f"The configured log level '{log_level}' does not exist. Using INFO instead.")
             self._config["log_level"] = "INFO"
 
-    def _sanitize_traits(self):
-        """
-        Sanitize the user configured traits by checking against currently implemented traits.
-        """
-        current_traits = [trait.name for trait in list(images.Trait)]
-        configured_traits = self._config.get("traits", [])
-
-        allowed_traits = []
-        for trait in configured_traits:
-            if trait.upper() not in current_traits:
-                logger.warning(f"The configured trait '{trait}' does not exist. Skipping it.")
-                continue
-            allowed_traits.append(images.Trait[trait.upper()])
-
-        if len(allowed_traits) == 0:
-            logger.warning(f"No valid traits were configured. Falling back to {images.Trait.get_default_traits()}.")
-            allowed_traits = images.Trait.get_default_traits()
-
-        self._config["traits"] = allowed_traits
-
     def _sanitize_game_mode(self):
         """
         Sanitize the user configured game mode by checking against valid values.
@@ -108,6 +88,31 @@ class AluneConfig:
         if game_mode not in {"normal", "dawn of heroes"}:
             logger.warning(f"The configured game mode '{game_mode}' does not exist. Playing 'normal' instead.")
             self._config["game_mode"] = "normal"
+
+    def _sanitize_traits(self):
+        """
+        Sanitize the user configured traits by checking against currently implemented traits.
+        """
+        if self._config["game_mode"] == "dawn of heroes":
+            trait_class = images.DawnOfHeroesTrait
+        else:
+            trait_class = images.Trait
+
+        current_traits = [trait.name for trait in list(trait_class)]
+        configured_traits = self._config.get("traits", [])
+
+        allowed_traits = []
+        for trait in configured_traits:
+            if trait.upper() not in current_traits:
+                logger.warning(f"The configured trait '{trait}' does not exist. Skipping it.")
+                continue
+            allowed_traits.append(trait_class[trait.upper()])
+
+        if len(allowed_traits) == 0:
+            logger.warning(f"No valid traits were configured. Falling back to {trait_class.get_default_traits()}.")
+            allowed_traits = trait_class.get_default_traits()
+
+        self._config["traits"] = allowed_traits
 
     def get_log_level(self) -> str:
         """
