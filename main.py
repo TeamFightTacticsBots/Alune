@@ -46,6 +46,7 @@ class GameState(StrEnum):
     LOBBY = auto()
     QUEUE_MISSED = auto()
     IN_GAME = auto()
+    POST_GAME_DAWN_OF_HEROES = auto()
     POST_GAME = auto()
     CHOICE_CONFIRM = auto()
 
@@ -355,9 +356,12 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                         break
                 await adb_instance.click_button(Button.exit_now)
                 await asyncio.sleep(10)
+            case GameState.POST_GAME_DAWN_OF_HEROES:
+                logger.info("App state is after a game for dawn of heroes, clicking 'Continue'.")
+                await adb_instance.click_button(Button.dawn_of_heroes_continue)
             case GameState.POST_GAME:
                 logger.info("App state is post game, clicking 'Play again'.")
-                await adb_instance.click_bounding_box(Button.play.click_box)
+                await adb_instance.click_button(Button.play)
 
         await asyncio.sleep(2)
 
@@ -392,6 +396,9 @@ async def get_game_state(screenshot: ndarray, config: AluneConfig) -> GameStateI
 
     if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
         return GameStateImageResult(GameState.IN_GAME)
+
+    if screen.get_on_screen(screenshot, Image.BACK) and screen.get_button_on_screen(screenshot, Button.dawn_of_heroes_continue):
+        return GameStateImageResult(GameState.POST_GAME_DAWN_OF_HEROES)
 
     if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
         return GameStateImageResult(GameState.POST_GAME)

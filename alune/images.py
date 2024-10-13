@@ -309,6 +309,10 @@ class Button:
         click_box=BoundingBox(1155, 595, 1242, 682),
         capture_area=BoundingBox(1128, 568, 1269, 709),
     )
+    dawn_of_heroes_continue = ImageButton(
+        click_box=BoundingBox(968, 618, 1211, 668),
+        capture_area=BoundingBox(950, 610, 1230, 640),
+    )
 
     # Buttons without an image.
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))
