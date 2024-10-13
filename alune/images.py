@@ -143,6 +143,7 @@ class Image(StrEnum):
     COLLAPSE_TOP_BAR = auto()
     PHASE_3_2_FULL = auto()
     NORMAL_GAME = auto()
+    DAWN_OF_HEROES = auto()
 
 
 class Trait(StrEnum):
