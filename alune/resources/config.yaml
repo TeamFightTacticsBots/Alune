@@ -3,6 +3,11 @@
 # Valid levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 log_level: "INFO"
 
+# The game mode the bot should play.
+# Currently valid game modes: normal, dawn of heroes
+# Please note that changing this may require changing traits as well.
+game_mode: "normal"
+
 # The traits you want the bot to roll for.
 # The trait names are almost as written in-game, with spaces replaced by _ and . and : being ignored.
 # For example: admin, star_guardian, mecha_prime, lasercorps
@@ -23,6 +28,6 @@ surrender_random_delay: 0
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 3
+version: 4
 # Version of the TFT set.
 set: 12

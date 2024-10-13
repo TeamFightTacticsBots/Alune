@@ -69,6 +69,7 @@ class AluneConfig:
         """
         self._sanitize_log_level()
         self._sanitize_traits()
+        self._sanitize_game_mode()
 
     def _sanitize_log_level(self):
         """
@@ -98,6 +99,15 @@ class AluneConfig:
             allowed_traits = images.Trait.get_default_traits()
 
         self._config["traits"] = allowed_traits
+
+    def _sanitize_game_mode(self):
+        """
+        Sanitize the user configured game mode by checking against valid values.
+        """
+        game_mode = self._config.get("game_mode", "normal")
+        if game_mode not in {"normal", "dawn of heroes"}:
+            logger.warning(f"The configured game mode '{game_mode}' does not exist. Playing 'normal' instead.")
+            self._config["game_mode"] = "normal"
 
     def get_log_level(self) -> str:
         """
@@ -137,7 +147,7 @@ class AluneConfig:
 
     def get_surrender_delay(self) -> int:
         """
-        Get the surrender delay
+        Get the surrender delay.
 
         Returns:
             An random Integer between [1 and surrender_random_delay]
@@ -147,3 +157,12 @@ class AluneConfig:
         if delay_upper_bound <= 0:
             return 0
         return _random.randint(1, delay_upper_bound)
+
+    def get_game_mode(self) -> str:
+        """
+        Get the game mode we should play.
+
+        Returns:
+            The game mode name.
+        """
+        return self._config["game_mode"]

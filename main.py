@@ -309,7 +309,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
             await asyncio.sleep(5)
 
         screenshot = await adb_instance.get_screen()
-        game_state_image_result = await get_game_state(screenshot)
+        game_state_image_result = await get_game_state(screenshot, config)
 
         if not game_state_image_result:
             await asyncio.sleep(2)
@@ -350,7 +350,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
-                    game_state = await get_game_state(screenshot)
+                    game_state = await get_game_state(screenshot, config)
                     if game_state and game_state.game_state == GameState.POST_GAME:
                         break
                 await adb_instance.click_button(Button.exit_now)
@@ -363,12 +363,13 @@ async def loop(adb_instance: ADB, config: AluneConfig):
 
 
 # pylint: disable-next=too-many-return-statements
-async def get_game_state(screenshot: ndarray) -> GameStateImageResult | None:
+async def get_game_state(screenshot: ndarray, config: AluneConfig) -> GameStateImageResult | None:
     """
     Get the current app/game state based off a screenshot.
 
     Args:
         screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
+        config: An instance of the alune config to use.
     """
     if screen.get_button_on_screen(screenshot, Button.check_choice):
         return GameStateImageResult(GameState.CHOICE_CONFIRM)
@@ -379,7 +380,8 @@ async def get_game_state(screenshot: ndarray) -> GameStateImageResult | None:
     if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.BACK):
         return GameStateImageResult(GameState.MAIN_MENU)
 
-    if image_result := screen.get_on_screen(screenshot, Image.NORMAL_GAME):
+    game_mode_image = Image.DAWN_OF_HEROES if config.get_game_mode() == "dawn of heroes" else Image.NORMAL_GAME
+    if image_result := screen.get_on_screen(screenshot, game_mode_image):
         return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
 
     if screen.get_button_on_screen(screenshot, Button.check):
