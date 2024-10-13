@@ -4,6 +4,7 @@ Collection of helper methods.
 
 from pathlib import Path
 import sys
+from time import sleep
 
 from loguru import logger
 
@@ -101,4 +102,6 @@ def raise_and_exit(error: str, exit_code: int = 1) -> None:
         exit_code: The relative or absolute path to the image to be found. Defaults to 1.
     """
     logger.error(error)
+    logger.warning("Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs.")
+    sleep(10)
     sys.exit(exit_code)

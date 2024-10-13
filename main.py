@@ -11,6 +11,7 @@ import json
 import os
 from random import Random
 import sys
+import time
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
@@ -580,3 +581,9 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Thanks for using Alune, see you next time!")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.exception(e)
+        logger.warning(
+            "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
+        )
+        time.sleep(10)
