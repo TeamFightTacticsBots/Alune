@@ -226,19 +226,22 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
         config: An instance of the alune config to use.
     """
     screenshot = await adb_instance.get_screen()
-    is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
-    if is_in_carousel:
-        logger.debug("Is on carousel, clicking a random point within bounds")
-        # Move to a random point in the carousel area
-        await adb_instance.click_bounding_box(BoundingBox(420, 180, 825, 425))
-        await asyncio.sleep(_random.randint(3, 9))
-        return
 
     is_on_other_board = screen.get_button_on_screen(screenshot, Button.return_to_board)
     if is_on_other_board:
-        logger.debug("Is on other board, returning to own board")
+        logger.debug("Is on other board, checking if we are on a carousel")
         await adb_instance.click_button(Button.return_to_board)
         await asyncio.sleep(1)
+
+        screenshot = await adb_instance.get_screen()
+        is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
+        if is_in_carousel:
+            logger.debug("Is on carousel, clicking a random point within bounds")
+            await adb_instance.click_button(Button.return_to_board)
+            await asyncio.sleep(1)
+            # Move to a random point in the carousel area
+            await adb_instance.click_bounding_box(BoundingBox(420, 180, 825, 425))
+            await asyncio.sleep(_random.randint(1, 5))
         return
 
     await handle_augments(screenshot, adb_instance)
@@ -397,7 +400,9 @@ async def get_game_state(screenshot: ndarray, config: AluneConfig) -> GameStateI
     if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
         return GameStateImageResult(GameState.IN_GAME)
 
-    if screen.get_on_screen(screenshot, Image.BACK) and screen.get_button_on_screen(screenshot, Button.dawn_of_heroes_continue):
+    if screen.get_on_screen(screenshot, Image.BACK) and screen.get_button_on_screen(
+        screenshot, Button.dawn_of_heroes_continue
+    ):
         return GameStateImageResult(GameState.POST_GAME_DAWN_OF_HEROES)
 
     if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):

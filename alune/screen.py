@@ -170,11 +170,13 @@ def get_all_on_screen(
             # Override the best result with empty pixels.
             # Not doing this would result in the same location being matched multiple times across its width and height.
             search_result[height_from:height_to, width_from:width_to] = 0
-            image_search_results.append(ImageSearchResult(
-                x=max_location[0] + (bounding_box.min_x if bounding_box else 0),
-                y=max_location[1] + (bounding_box.min_y if bounding_box else 0),
-                height=to_find_height,
-                width=to_find_width,
-            ))
+            image_search_results.append(
+                ImageSearchResult(
+                    x=max_location[0] + (bounding_box.min_x if bounding_box else 0),
+                    y=max_location[1] + (bounding_box.min_y if bounding_box else 0),
+                    height=to_find_height,
+                    width=to_find_width,
+                )
+            )
 
     return image_search_results

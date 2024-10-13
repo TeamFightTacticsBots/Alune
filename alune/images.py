@@ -196,6 +196,7 @@ class DawnOfHeroesTrait(StrEnum):
     """
     The same as ImageEnum, but images are intentionally in a different place and will
     change with each set.
+    Specifically for dawn of heroes traits.
     """
 
     # noinspection PyMethodParameters
