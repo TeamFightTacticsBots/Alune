@@ -327,7 +327,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                 logger.info("App state is choice confirm, accepting the choice.")
                 await adb_instance.click_button(Button.check_choice)
             case GameState.CHOOSE_MODE:
-                logger.info("App state is choose mode, selecting normal game.")
+                logger.info(f"App state is choose mode, selecting {config.get_game_mode()}.")
                 await adb_instance.click_image(game_state_image_result.image_result)
             case GameState.QUEUE_MISSED:
                 logger.info("App state is queue missed, clicking it.")
