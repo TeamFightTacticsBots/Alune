@@ -62,7 +62,7 @@ def get_image_from_path(path: str) -> MatLike | None:
     image_to_find = cv2.imread(path, 0)
 
     if image_to_find is None:
-        logger.warning(f"The image {path} does not exist on the system " f"or we do not have permission to read it.")
+        logger.warning(f"The image {path} does not exist on the system, or we do not have permission to read it.")
         return None
 
     return image_to_find
