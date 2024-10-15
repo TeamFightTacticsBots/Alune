@@ -5,7 +5,9 @@ Module for image recognition on the screen.
 from dataclasses import dataclass
 
 import cv2
+import numpy
 from cv2.typing import MatLike
+from imutils.object_detection import non_max_suppression
 from loguru import logger
 from numpy import ndarray
 
@@ -157,26 +159,23 @@ def get_all_on_screen(
 
     search_result = get_match_template(image=image, image_to_find=image_to_find, bounding_box=bounding_box)
 
+    (y_coordinates, x_coordinates) = numpy.where(search_result >= precision)
     to_find_height, to_find_width = image_to_find.shape[:2]
+    matches = []
+
+    for (x, y) in zip(x_coordinates, y_coordinates):
+        matches.append((x, y, x + to_find_width, y + to_find_height))
+    matches_without_duplicates = non_max_suppression(numpy.array(matches))
+
     image_search_results = []
-    max_precision = 1
-    while max_precision > precision:
-        _, max_precision, _, max_location = cv2.minMaxLoc(search_result)
-        if max_precision > precision:
-            height_from = max_location[1] - to_find_height // 2
-            height_to = max_location[1] + to_find_height // 2 + 1
-            width_from = max_location[0] - to_find_width // 2
-            width_to = max_location[0] + to_find_width // 2 + 1
-            # Override the best result with empty pixels.
-            # Not doing this would result in the same location being matched multiple times across its width and height.
-            search_result[height_from:height_to, width_from:width_to] = 0
-            image_search_results.append(
-                ImageSearchResult(
-                    x=max_location[0] + (bounding_box.min_x if bounding_box else 0),
-                    y=max_location[1] + (bounding_box.min_y if bounding_box else 0),
-                    height=to_find_height,
-                    width=to_find_width,
-                )
+    for (min_x, min_y, max_x, max_y) in matches_without_duplicates:
+        image_search_results.append(
+            ImageSearchResult(
+                x=min_x + (bounding_box.min_x if bounding_box else 0),
+                y=min_y + (bounding_box.min_y if bounding_box else 0),
+                width=to_find_width,
+                height=to_find_height
             )
+        )
 
     return image_search_results

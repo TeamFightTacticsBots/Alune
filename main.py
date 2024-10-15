@@ -196,26 +196,30 @@ async def buy_from_shop(adb_instance: ADB, config: AluneConfig):
         config: An instance of the alune config to use.
     """
     screenshot = await adb_instance.get_screen()
+    logger.debug("Buying from shop")
     for trait in config.get_traits():
-        search_result = screen.get_on_screen(
+        search_results = screen.get_all_on_screen(
             image=screenshot,
             path=trait,
             bounding_box=BoundingBox(170, 110, 1250, 230),
             precision=0.9,
         )
-        if not search_result:
+        if len(search_results) == 0:
+            logger.debug(f"No card in the shop has the trait {trait.name}.")
             continue
 
+        logger.debug(f"{len(search_results)} cards in the shop have the trait {trait.name}.")
         store_cards = Button.get_store_cards()
         _random.shuffle(store_cards)
-        for store_card in store_cards:
-            if not store_card.click_box.is_inside(search_result.get_middle()):
-                continue
-            logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
-            await adb_instance.click_button(store_card)
-            break
+        for search_result in search_results:
+            for store_card in store_cards:
+                if not store_card.click_box.is_inside(search_result.get_middle()):
+                    continue
+                logger.debug(f"Buying store card {Button.get_store_cards().index(store_card) + 1}")
+                await adb_instance.click_button(store_card)
+                break
 
-        await asyncio.sleep(0.25)
+            await asyncio.sleep(_random.uniform(0.25, 0.75))
 
 
 async def take_game_decision(adb_instance: ADB, config: AluneConfig):
@@ -269,8 +273,8 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
 
     await buy_from_shop(adb_instance, config)
 
-    if await check_surrender_state(adb_instance, screenshot, config):
-        await surrender_game(adb_instance)
+    # if await check_surrender_state(adb_instance, screenshot, config):
+        # await surrender_game(adb_instance)
 
 
 async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
