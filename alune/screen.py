@@ -134,6 +134,36 @@ def get_on_screen(
     )
 
 
+def get_all_matches_without_duplicates(
+    search_result: ndarray,
+    image_to_find: ndarray,
+    precision: float,
+    bounding_box: BoundingBox | None = None,
+) -> list[tuple[int, int, int, int]]:
+    """
+    Get all matches from a search result, removing duplicates.
+
+    Args:
+        search_result: The search result of a match template.
+        image_to_find: The image that was used to search.
+        precision: The precision to filter the search by.
+        bounding_box: The offsetting bounding box used in the screenshot.
+
+    Returns:
+        A list of rectangle coordinates of all matches without duplicates.
+    """
+    (y_coordinates, x_coordinates) = numpy.where(search_result >= precision)
+    to_find_height, to_find_width = image_to_find.shape[:2]
+    matches = []
+
+    offset_x = bounding_box.min_x if bounding_box else 0
+    offset_y = bounding_box.min_y if bounding_box else 0
+    for x, y in zip(x_coordinates, y_coordinates):
+        matches.append((offset_x + x, offset_y + y, offset_x + x + to_find_width, offset_y + y + to_find_height))
+
+    return non_max_suppression(numpy.array(matches))
+
+
 def get_all_on_screen(
     image: ndarray,
     path: str,
@@ -159,25 +189,11 @@ def get_all_on_screen(
 
     search_result = get_match_template(image=image, image_to_find=image_to_find, bounding_box=bounding_box)
 
-    (y_coordinates, x_coordinates) = numpy.where(search_result >= precision)
-    to_find_height, to_find_width = image_to_find.shape[:2]
-    matches = []
-
-    for x, y in zip(x_coordinates, y_coordinates):
-        matches.append((x, y, x + to_find_width, y + to_find_height))
-    matches_without_duplicates = non_max_suppression(numpy.array(matches))
+    deduplicated_matches = get_all_matches_without_duplicates(
+        search_result=search_result, image_to_find=image_to_find, precision=precision, bounding_box=bounding_box
+    )
 
     image_search_results = []
-    offset_x = bounding_box.min_x if bounding_box else 0
-    offset_y = bounding_box.min_y if bounding_box else 0
-    for min_x, min_y, max_x, max_y in matches_without_duplicates:
-        image_search_results.append(
-            ImageSearchResult(
-                x=min_x + offset_x,
-                y=min_y + offset_y,
-                width=to_find_width,
-                height=to_find_height,
-            )
-        )
-
+    for min_x, min_y, max_x, max_y in deduplicated_matches:
+        image_search_results.append(ImageSearchResult(min_x, min_y, max_x - min_x, max_y - min_y))
     return image_search_results
