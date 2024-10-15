@@ -326,7 +326,7 @@ class Button:
     augment_three = ClickButton(BoundingBox(863, 120, 1117, 520))
     augment_one_roll = ClickButton(BoundingBox(266, 602, 323, 659))
     augment_two_roll = ClickButton(BoundingBox(612, 602, 669, 659))
-    augment_three_roll = ClickButton(BoundingBox(659, 602, 1016, 659))
+    augment_three_roll = ClickButton(BoundingBox(960, 602, 1016, 659))
     surrender = ClickButton(BoundingBox(820, 585, 1035, 635))
     expand_top_bar = ClickButton(BoundingBox(908, 12, 918, 20))
 
