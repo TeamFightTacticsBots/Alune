@@ -354,10 +354,15 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                     await take_game_decision(adb_instance, config)
                     await asyncio.sleep(10)
                     screenshot = await adb_instance.get_screen()
-                    search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
+
                     game_state = await get_game_state(screenshot, config)
-                    if game_state and game_state.game_state == GameState.POST_GAME:
+                    if game_state and game_state.game_state in {
+                        GameState.POST_GAME,
+                        GameState.POST_GAME_DAWN_OF_HEROES,
+                    }:
                         break
+
+                    search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 await adb_instance.click_button(Button.exit_now)
                 await asyncio.sleep(10)
             case GameState.POST_GAME_DAWN_OF_HEROES:
