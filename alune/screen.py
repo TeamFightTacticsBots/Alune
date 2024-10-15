@@ -5,10 +5,10 @@ Module for image recognition on the screen.
 from dataclasses import dataclass
 
 import cv2
-import numpy
 from cv2.typing import MatLike
 from imutils.object_detection import non_max_suppression
 from loguru import logger
+import numpy
 from numpy import ndarray
 
 from alune.images import BoundingBox
@@ -163,18 +163,20 @@ def get_all_on_screen(
     to_find_height, to_find_width = image_to_find.shape[:2]
     matches = []
 
-    for (x, y) in zip(x_coordinates, y_coordinates):
+    for x, y in zip(x_coordinates, y_coordinates):
         matches.append((x, y, x + to_find_width, y + to_find_height))
     matches_without_duplicates = non_max_suppression(numpy.array(matches))
 
     image_search_results = []
-    for (min_x, min_y, max_x, max_y) in matches_without_duplicates:
+    offset_x = bounding_box.min_x if bounding_box else 0
+    offset_y = bounding_box.min_y if bounding_box else 0
+    for min_x, min_y, max_x, max_y in matches_without_duplicates:
         image_search_results.append(
             ImageSearchResult(
-                x=min_x + (bounding_box.min_x if bounding_box else 0),
-                y=min_y + (bounding_box.min_y if bounding_box else 0),
+                x=min_x + offset_x,
+                y=min_y + offset_y,
                 width=to_find_width,
-                height=to_find_height
+                height=to_find_height,
             )
         )
 
