@@ -243,10 +243,9 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
         if is_in_carousel:
             logger.debug("Is on carousel, clicking a random point within bounds")
             await adb_instance.click_button(Button.return_to_board)
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
             # Move to a random point in the carousel area
             await adb_instance.click_bounding_box(BoundingBox(420, 180, 825, 425))
-            await asyncio.sleep(_random.randint(1, 5))
         return
 
     await handle_augments(screenshot, adb_instance)
@@ -273,8 +272,8 @@ async def take_game_decision(adb_instance: ADB, config: AluneConfig):
 
     await buy_from_shop(adb_instance, config)
 
-    # if await check_surrender_state(adb_instance, screenshot, config):
-        # await surrender_game(adb_instance)
+    if await check_surrender_state(adb_instance, screenshot, config):
+        await surrender_game(adb_instance)
 
 
 async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
@@ -356,7 +355,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
                         continue
 
                     await take_game_decision(adb_instance, config)
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(5)
                     screenshot = await adb_instance.get_screen()
 
                     game_state = await get_game_state(screenshot, config)
