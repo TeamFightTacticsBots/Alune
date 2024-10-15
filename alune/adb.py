@@ -179,7 +179,7 @@ class ADB:
         Returns:
             The ndarray containing the gray-scaled pixels.
         """
-        image_bytes_str = await self._device.shell("screencap -p", decode=False)
+        image_bytes_str = await self._device.exec_out("screencap -p", decode=False)
         raw_image = numpy.frombuffer(image_bytes_str, dtype=numpy.uint8)
         return cv2.imdecode(raw_image, cv2.IMREAD_GRAYSCALE)
 
