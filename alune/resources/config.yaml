@@ -27,8 +27,12 @@ surrender_early: false
 # Default value : 0 (disabled = surrender as fast as possible)
 surrender_random_delay: 0
 
+# Override the default ADB port Alune tries to connect to.
+# If there is no device listening on this port, a scan will happen to find your device.
+adb_port: 5555
+
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 5
+version: 6
 # Version of the TFT set.
 set: 12
