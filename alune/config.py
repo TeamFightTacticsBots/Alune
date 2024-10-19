@@ -2,6 +2,7 @@
 Module to handle the configuration for the bot.
 """
 
+from collections import defaultdict
 import os.path
 from random import Random
 import shutil
@@ -71,6 +72,7 @@ class AluneConfig:
         self._sanitize_game_mode()
         self._sanitize_traits()
         self._sanitize_adb_port()
+        self._sanitize_chances()
 
     def _sanitize_adb_port(self):
         adb_port = self._config.get("adb_port", 5555)
@@ -80,6 +82,17 @@ class AluneConfig:
             logger.warning(f"The configured adb port '{adb_port}' is not a number. Using 5555 instead.")
             adb_port = 5555
         self._config["adb_port"] = adb_port
+
+    def _sanitize_chances(self):
+        chance_config = self._config.get("chances", defaultdict())
+        buy_xp_chance = chance_config.get("buy_xp", 33)
+        try:
+            buy_xp_chance = int(buy_xp_chance)
+        except ValueError:
+            logger.warning(f"The configured buy_xp chance '{buy_xp_chance}' is not a number. Using 33 instead.")
+            buy_xp_chance = 33
+        chance_config["buy_xp"] = buy_xp_chance
+        self._config["chances"] = chance_config
 
     def _sanitize_log_level(self):
         """
@@ -181,3 +194,12 @@ class AluneConfig:
             The game mode name.
         """
         return self._config["game_mode"]
+
+    def get_chance_to_buy_xp(self) -> int:
+        """
+        Get the chance in percent the bot should buy xp at per check.
+
+        Returns:
+            The chance in percent from 0 to 100.
+        """
+        return self._config["chances"]["buy_xp"]
