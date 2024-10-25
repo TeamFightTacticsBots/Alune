@@ -296,6 +296,74 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         await loop_disconnect_wrapper(adb_instance, config)
 
 
+async def take_app_decision(game_state_image_result: GameStateImageResult, adb_instance: ADB, config: AluneConfig):
+    """
+    Match the game state and take a decision based on it.
+
+    Args:
+         game_state_image_result: The result of the game state image search.
+         adb_instance: The ADB instance to take action in.
+         config: An instance of the alune config.
+    """
+    match game_state_image_result.game_state:
+        case GameState.LOADING:
+            logger.info("App state is loading...")
+            # TODO Check if the log-in prompt is on screen
+            await asyncio.sleep(10)
+        case GameState.MAIN_MENU:
+            logger.info("App state is main menu, clicking 'Play'.")
+            await adb_instance.click_button(Button.play)
+        case GameState.CHOICE_CONFIRM:
+            logger.info("App state is choice confirm, accepting the choice.")
+            await adb_instance.click_button(Button.check_choice)
+        case GameState.CHOOSE_MODE:
+            logger.info(f"App state is choose mode, selecting {config.get_game_mode()}.")
+            await adb_instance.click_image(game_state_image_result.image_result)
+        case GameState.QUEUE_MISSED:
+            logger.info("App state is queue missed, clicking it.")
+            await adb_instance.click_button(Button.check)
+        case GameState.LOBBY:
+            logger.info("App state is in lobby, locking bot into queue logic.")
+            await adb_instance.click_button(Button.play)
+            await queue(adb_instance)
+            logger.info("Queue lock released, likely loading into game now.")
+        case GameState.IN_GAME:
+            logger.info("App state is in game, looping decision making and waiting for the exit button.")
+            screenshot = await adb_instance.get_screen()
+            search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
+            while not search_result:
+                if PAUSE_LOGIC:
+                    await asyncio.sleep(5)
+                    continue
+
+                if not await adb_instance.is_tft_active():
+                    logger.info("TFT got closed, starting it again.")
+                    await adb_instance.start_tft_app()
+                    await asyncio.sleep(10)
+                    break
+
+                await take_game_decision(adb_instance, config)
+                await asyncio.sleep(5)
+                screenshot = await adb_instance.get_screen()
+
+                game_state = await get_game_state(screenshot, config)
+                if game_state and game_state.game_state in {
+                    GameState.POST_GAME,
+                    GameState.POST_GAME_DAWN_OF_HEROES,
+                }:
+                    break
+
+                search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
+            await adb_instance.click_button(Button.exit_now)
+            await asyncio.sleep(10)
+        case GameState.POST_GAME_DAWN_OF_HEROES:
+            logger.info("App state is after a game for dawn of heroes, clicking 'Continue'.")
+            await adb_instance.click_button(Button.dawn_of_heroes_continue)
+        case GameState.POST_GAME:
+            logger.info("App state is post game, clicking 'Play again'.")
+            await adb_instance.click_button(Button.play)
+
+
 async def loop(adb_instance: ADB, config: AluneConfig):
     """
     The main app loop logic.
@@ -323,57 +391,7 @@ async def loop(adb_instance: ADB, config: AluneConfig):
             await asyncio.sleep(2)
             continue
 
-        match game_state_image_result.game_state:
-            case GameState.LOADING:
-                logger.info("App state is loading...")
-                # TODO Check if the log-in prompt is on screen
-                await asyncio.sleep(10)
-            case GameState.MAIN_MENU:
-                logger.info("App state is main menu, clicking 'Play'.")
-                await adb_instance.click_button(Button.play)
-            case GameState.CHOICE_CONFIRM:
-                logger.info("App state is choice confirm, accepting the choice.")
-                await adb_instance.click_button(Button.check_choice)
-            case GameState.CHOOSE_MODE:
-                logger.info(f"App state is choose mode, selecting {config.get_game_mode()}.")
-                await adb_instance.click_image(game_state_image_result.image_result)
-            case GameState.QUEUE_MISSED:
-                logger.info("App state is queue missed, clicking it.")
-                await adb_instance.click_button(Button.check)
-            case GameState.LOBBY:
-                logger.info("App state is in lobby, locking bot into queue logic.")
-                await adb_instance.click_button(Button.play)
-                await queue(adb_instance)
-                logger.info("Queue lock released, likely loading into game now.")
-            case GameState.IN_GAME:
-                logger.info("App state is in game, looping decision making and waiting for the exit button.")
-                screenshot = await adb_instance.get_screen()
-                search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
-                while not search_result:
-                    if PAUSE_LOGIC:
-                        await asyncio.sleep(5)
-                        continue
-
-                    await take_game_decision(adb_instance, config)
-                    await asyncio.sleep(5)
-                    screenshot = await adb_instance.get_screen()
-
-                    game_state = await get_game_state(screenshot, config)
-                    if game_state and game_state.game_state in {
-                        GameState.POST_GAME,
-                        GameState.POST_GAME_DAWN_OF_HEROES,
-                    }:
-                        break
-
-                    search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
-                await adb_instance.click_button(Button.exit_now)
-                await asyncio.sleep(10)
-            case GameState.POST_GAME_DAWN_OF_HEROES:
-                logger.info("App state is after a game for dawn of heroes, clicking 'Continue'.")
-                await adb_instance.click_button(Button.dawn_of_heroes_continue)
-            case GameState.POST_GAME:
-                logger.info("App state is post game, clicking 'Play again'.")
-                await adb_instance.click_button(Button.play)
+        await take_app_decision(game_state_image_result, adb_instance, config)
 
         await asyncio.sleep(2)
 
