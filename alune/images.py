@@ -165,20 +165,32 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.REBEL]
+        return [cls.REBEL, cls.SENTINEL]
 
     ACADEMY = auto()
+    AMBUSHER = auto()
+    ARTILLERIST = auto()
     AUTOMATA = auto()
     BLACKROSE = auto()
+    BRUSIER = auto()
     CHEMBARON = auto()
     CONQUEROR = auto()
+    DOMINATOR = auto()
     EMISSARY = auto()
     ENFORCER = auto()
     EXPERIMENT = auto()
     FAMILY = auto()
     FIRELIGHT = auto()
+    FORMSWAPPER = auto()
+    PITFIGHTER = auto()
+    QUICKSTRIKER = auto()
     REBEL = auto()
     SCRAP = auto()
+    SENTINEL = auto()
+    SNIPER = auto()
+    SORCERER = auto()
+    VISIONARY = auto()
+    WATCHER = auto()
 
 
 class DawnOfHeroesTrait(StrEnum):
@@ -191,7 +203,7 @@ class DawnOfHeroesTrait(StrEnum):
     # noinspection PyMethodParameters
     # pylint: disable-next=no-self-argument,redefined-outer-name
     def _generate_next_value_(name, start, count, last_values):
-        return helpers.get_resource_path(f"alune/images/traits/into_the_arcane/{name.lower()}.png")
+        return helpers.get_resource_path(f"alune/images/traits/dawn_of_heroes/{name.lower()}.png")
 
     @classmethod
     def get_default_traits(cls):
@@ -201,21 +213,7 @@ class DawnOfHeroesTrait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.SENTINEL]
-
-    # Dawn of Heroes
-    AMBUSHER = auto()
-    ARTILLERIST = auto()
-    BRUSIER = auto()
-    DOMINATOR = auto()
-    FORMSWAPPER = auto()
-    PITFIGHTER = auto()
-    QUICKSTRIKER = auto()
-    SENTINEL = auto()
-    SNIPER = auto()
-    SORCERER = auto()
-    VISIONARY = auto()
-    WATCHER = auto()
+        return [cls.DAWNBRINGER]
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods
