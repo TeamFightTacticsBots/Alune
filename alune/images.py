@@ -165,31 +165,20 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.WITCHCRAFT, cls.INCANTOR]
+        return [cls.REBEL]
 
-    ARCANA = auto()
-    BASTION = auto()
-    BLASTER = auto()
-    CHRONO = auto()
-    DRAGON = auto()
-    DRUID = auto()
-    ELDRITCH = auto()
-    FAERIE = auto()
-    FROST = auto()
-    HONEYMANCY = auto()
-    HUNTER = auto()
-    INCANTOR = auto()
-    MAGE = auto()
-    MULTISTRIKER = auto()
-    PORTAL = auto()
-    PRESERVER = auto()
-    PYRO = auto()
-    SCHOLAR = auto()
-    SHAPESHIFTER = auto()
-    SUGARCRAFT = auto()
-    VANGUARD = auto()
-    WARRIOR = auto()
-    WITCHCRAFT = auto()
+    ACADEMY = auto()
+    AUTOMATA = auto()
+    BLACKROSE = auto()
+    CHEMBARON = auto()
+    CONQUEROR = auto()
+    EMISSARY = auto()
+    ENFORCER = auto()
+    EXPERIMENT = auto()
+    FAMILY = auto()
+    FIRELIGHT = auto()
+    REBEL = auto()
+    SCRAP = auto()
 
 
 class DawnOfHeroesTrait(StrEnum):
@@ -202,7 +191,7 @@ class DawnOfHeroesTrait(StrEnum):
     # noinspection PyMethodParameters
     # pylint: disable-next=no-self-argument,redefined-outer-name
     def _generate_next_value_(name, start, count, last_values):
-        return helpers.get_resource_path(f"alune/images/traits/dawn_of_heroes/{name.lower()}.png")
+        return helpers.get_resource_path(f"alune/images/traits/into_the_arcane/{name.lower()}.png")
 
     @classmethod
     def get_default_traits(cls):
@@ -212,23 +201,21 @@ class DawnOfHeroesTrait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.DAWNBRINGER]
+        return [cls.SENTINEL]
 
     # Dawn of Heroes
-    ASSASSIN = auto()
-    BRAWLER = auto()
-    CANNONEER = auto()
-    CAVALIER = auto()
-    DAWNBRINGER = auto()
-    DRACONIC = auto()
-    FORGOTTEN = auto()
-    HELLION = auto()
-    NIGHTBRINGER = auto()
-    RANGER = auto()
-    REDEEMED = auto()
+    AMBUSHER = auto()
+    ARTILLERIST = auto()
+    BRUSIER = auto()
+    DOMINATOR = auto()
+    FORMSWAPPER = auto()
+    PITFIGHTER = auto()
+    QUICKSTRIKER = auto()
     SENTINEL = auto()
-    SKIRMISHER = auto()
-    SPELLWEAVER = auto()
+    SNIPER = auto()
+    SORCERER = auto()
+    VISIONARY = auto()
+    WATCHER = auto()
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods
