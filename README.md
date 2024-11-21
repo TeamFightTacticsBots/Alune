@@ -1,7 +1,7 @@
 ![alune_header](https://github.com/TeamFightTacticsBots/Alune/assets/60011425/dd30ed87-c5ca-42eb-810a-da07f6502cf5)
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-green" />
-  <img src="https://img.shields.io/badge/TFT_Set-12-blue" />
+  <img src="https://img.shields.io/badge/TFT_Set-13-blue" />
   <img src="https://github.com/TeamFightTacticsBots/Alune/actions/workflows/build.yml/badge.svg" />
 </p>
 
