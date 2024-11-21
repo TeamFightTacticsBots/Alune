@@ -213,8 +213,23 @@ class DawnOfHeroesTrait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.DAWNBRINGER]
+        return []
 
+    # Dawn of Heroes
+    ASSASSIN = auto()
+    BRAWLER = auto()
+    CANNONEER = auto()
+    CAVALIER = auto()
+    DAWNBRINGER = auto()
+    DRACONIC = auto()
+    FORGOTTEN = auto()
+    HELLION = auto()
+    NIGHTBRINGER = auto()
+    RANGER = auto()
+    REDEEMED = auto()
+    SENTINEL = auto()
+    SKIRMISHER = auto()
+    SPELLWEAVER = auto()
 
 class ClickButton:  # pylint: disable=too-few-public-methods
     """
