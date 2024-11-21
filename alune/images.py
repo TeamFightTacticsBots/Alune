@@ -215,22 +215,6 @@ class DawnOfHeroesTrait(StrEnum):
         """
         return []
 
-    # Dawn of Heroes
-    ASSASSIN = auto()
-    BRAWLER = auto()
-    CANNONEER = auto()
-    CAVALIER = auto()
-    DAWNBRINGER = auto()
-    DRACONIC = auto()
-    FORGOTTEN = auto()
-    HELLION = auto()
-    NIGHTBRINGER = auto()
-    RANGER = auto()
-    REDEEMED = auto()
-    SENTINEL = auto()
-    SKIRMISHER = auto()
-    SPELLWEAVER = auto()
-
 class ClickButton:  # pylint: disable=too-few-public-methods
     """
     A button which can and will be clicked.
