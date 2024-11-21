@@ -14,8 +14,8 @@ game_mode: "normal"
 # For a full list of valid traits, visit https://github.com/TeamFightTacticsBots/Alune/tree/main/alune/images/traits
 # Recommended dawn of heroes traits: dawnbringer
 traits:
-  - witchcraft
-  - incantor
+  - rebel
+  - sentinel
 
 # Determines whether the bot should surrender as soon as possible (after round 3-1)
 # Valid values : true, false
@@ -40,6 +40,6 @@ adb_port: 5555
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 6
+version: 7
 # Version of the TFT set.
-set: 12
+set: 13
