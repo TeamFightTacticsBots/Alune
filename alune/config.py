@@ -203,3 +203,12 @@ class AluneConfig:
             The chance in percent from 0 to 100.
         """
         return self._config["chances"]["buy_xp"]
+
+    def get_queue_timeout(self) -> int:
+        """
+        Get the queue timeout in seconds.
+
+        Returns:
+            The queue timeout in seconds.
+        """
+        return self._config["queue_timeout"]
