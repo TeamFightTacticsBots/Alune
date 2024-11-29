@@ -284,6 +284,8 @@ class Button:
     # Buttons with an image, the variable name must be the same as the image name.
     play = ImageButton(BoundingBox(950, 600, 1200, 650))
     accept = ImageButton(BoundingBox(525, 520, 755, 545))
+    exit_lobby = ImageButton(BoundingBox(50, 600, 130, 680))
+    exit_queue = ImageButton(BoundingBox(525, 520, 755, 545))
     exit_now = ImageButton(
         click_box=BoundingBox(550, 425, 740, 440),
         capture_area=BoundingBox(520, 400, 775, 425),

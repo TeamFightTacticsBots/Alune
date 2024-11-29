@@ -77,7 +77,7 @@ async def wait_for_accept_button(adb_instance: ADB):
         search_result = screen.get_button_on_screen(screenshot, Button.accept)
 
 
-async def queue(adb_instance: ADB):
+async def queue(adb_instance: ADB, config: AluneConfig):
     """
     Utility method to queue a match.
 
@@ -85,9 +85,11 @@ async def queue(adb_instance: ADB):
         adb_instance: An instance of the ADB connection to click in.
     """
     try:
-        await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=120)
+        await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=config.get_queue_timeout())
     except asyncio.TimeoutError:
-        logger.warning("Waiting for accept button timed out, re-checking app state")
+        logger.warning("Waiting for accept button timed out, exiting queue")
+        await adb_instance.click_button(Button.exit_lobby)
+        logger.info("Queue exited due to timeout.")
         return
     await adb_instance.click_button(Button.accept)
     await asyncio.sleep(2)
@@ -103,7 +105,7 @@ async def queue(adb_instance: ADB):
     screenshot = await adb_instance.get_screen()
     if screen.get_button_on_screen(screenshot, Button.accept) or screen.get_button_on_screen(screenshot, Button.play):
         logger.debug("Queue was declined by someone else, staying in queue lock state")
-        await queue(adb_instance)
+        await queue(adb_instance, config)
 
 
 _random = Random()
@@ -325,7 +327,7 @@ async def take_app_decision(game_state_image_result: GameStateImageResult, adb_i
         case GameState.LOBBY:
             logger.info("App state is in lobby, locking bot into queue logic.")
             await adb_instance.click_button(Button.play)
-            await queue(adb_instance)
+            await queue(adb_instance, config)
             logger.info("Queue lock released, likely loading into game now.")
         case GameState.IN_GAME:
             logger.info("App state is in game, looping decision making and waiting for the exit button.")
