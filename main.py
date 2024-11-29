@@ -83,6 +83,7 @@ async def queue(adb_instance: ADB, config: AluneConfig):
 
     Args:
         adb_instance: An instance of the ADB connection to click in.
+        config: An instance of the alune config to use.
     """
     try:
         await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=config.get_queue_timeout())

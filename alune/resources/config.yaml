@@ -8,8 +8,8 @@ log_level: "INFO"
 # Please note that changing this may require changing traits as well.
 game_mode: "normal"
 
-# Timeout for the bot to stay in the queue. I've seen some instances where the bot is in a queue for several dozen minutes.
-# This is the maximum time the bot will wait in the queue before it will exit the game. 150 secs seems to be a good value.
+# Timeout for the bot to stay in the queue. 
+# This is the maximum time the bot will wait in the queue before it will exit the game, in seconds.
 queue_timeout: 150
 
 # The traits you want the bot to roll for.
