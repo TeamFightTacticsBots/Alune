@@ -87,7 +87,6 @@ async def queue(adb_instance: ADB, config: AluneConfig):
     try:
         await asyncio.wait_for(wait_for_accept_button(adb_instance), timeout=config.get_queue_timeout())
     except asyncio.TimeoutError:
-        logger.warning("Waiting for accept button timed out, exiting queue")
         await adb_instance.click_button(Button.exit_lobby)
         logger.info("Queue exited due to timeout.")
         return
