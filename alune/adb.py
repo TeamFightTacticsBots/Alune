@@ -119,7 +119,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         if self._is_screen_recording:
             self._should_stop_screen_recording = True
 
-    def _create_screen_record_task(self):
+    def create_screen_record_task(self):
         """
         Create the screen recording task. Will not start recording if there's already a recording.
         """
@@ -139,7 +139,6 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
                 self._device = device
-                self._create_screen_record_task()
                 return
         except OSError:
             self._device = None
@@ -214,9 +213,9 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         if self._config.should_use_screen_record():
             return self._latest_frame
-        return await self.get_screen_capture()
+        return await self._get_screen_capture()
 
-    async def get_screen_capture(self) -> ndarray | None:
+    async def _get_screen_capture(self) -> ndarray | None:
         """
         Gets a ndarray which contains the values of the gray-scaled pixels
         currently on the screen. Uses screencap, so will take some processing time.

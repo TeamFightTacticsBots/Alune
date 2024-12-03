@@ -291,7 +291,9 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         await loop(adb_instance, config)
     except TcpTimeoutException:
         logger.warning("ADB device was disconnected, attempting one reconnect...")
+        adb_instance.mark_screen_record_for_close()
         await adb_instance.load()
+        adb_instance.create_screen_record_task()
         if not adb_instance.is_connected():
             raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
@@ -551,6 +553,7 @@ async def main():
 
     if config.should_use_screen_record():
         logger.info("The bot will use live screen recording for image searches.")
+        adb_instance.create_screen_record_task()
         while await adb_instance.get_screen() is None:
             logger.debug("Waiting for frame data to become available...")
             await asyncio.sleep(0.5)
