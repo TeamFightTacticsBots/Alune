@@ -118,6 +118,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         if self._is_screen_recording:
             self._should_stop_screen_recording = True
+            self._is_screen_recording = False
 
     def create_screen_record_task(self):
         """
@@ -126,6 +127,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         if self._is_screen_recording:
             return
 
+        self._should_stop_screen_recording = False
         asyncio.create_task(self.__screen_record())
         atexit.register(self.mark_screen_record_for_close)
 
@@ -368,10 +370,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Start a streaming shell that outputs screenrecord frame bytes and store it as a cv2 compatible image.
         """
         # output-format h264 > H264 is the only format that outputs to console which we can work with.
+        # time-limit 10 > Restarts screen recording every 10 seconds instead of every 180. Fixes compression artifacts.
         # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
-            command="screenrecord --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+            command="screenrecord --time-limit 10 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
         ):
             if self._should_stop_screen_recording:
                 break
