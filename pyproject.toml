@@ -23,6 +23,7 @@ dependencies = [
     "psutil==6.0.0",
     "keyboard==0.13.5",
     "imutils==0.5.4",
+    "av==14.0.0",
 ]
 
 [project.optional-dependencies]
