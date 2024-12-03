@@ -548,6 +548,12 @@ async def main():
 
     logger.debug("ADB is connected, checking phone and app details")
     await check_phone_preconditions(adb_instance)
+
+    while await adb_instance.get_screen() is None:
+        logger.debug("Waiting for frame data to become available...")
+        await asyncio.sleep(0.5)
+    logger.debug("Frames are now available.")
+
     logger.info("Connected to ADB and device is set up correctly, starting main loop.")
 
     if config.should_surrender():

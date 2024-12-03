@@ -2,6 +2,8 @@
 Module for all ADB (Android Debug Bridge) related methods.
 """
 
+import asyncio
+import atexit
 import os.path
 import random
 
@@ -9,6 +11,8 @@ from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
+from adb_shell.exceptions import TcpTimeoutException
+import av
 import cv2
 from loguru import logger
 import numpy
@@ -22,7 +26,9 @@ from alune.screen import BoundingBox
 from alune.screen import ImageSearchResult
 
 
-class ADB:
+# The amount of attributes is fine in my opinion.
+# We could split off screen recording into its own class, but I don't see the need to.
+class ADB:  # pylint-disable: too-many-instance-attributes
     """
     Class to hold the connection to an ADB connection via TCP.
     USB connection is possible, but not supported at the moment.
@@ -37,6 +43,11 @@ class ADB:
         self._random = random.Random()
         self._rsa_signer = None
         self._device = None
+
+        self._video_codec = av.codec.CodecContext.create("h264", "r")
+        self._is_screen_recording = False
+        self._should_stop_screen_recording = False
+        self._latest_frame = None
 
     async def load(self, port: int):
         """
@@ -97,6 +108,23 @@ class ADB:
         logger.warning("No local device was found. Make sure ADB is enabled in your emulator's settings.")
         return None
 
+    def mark_screen_record_for_close(self):
+        """
+        Tells the screen recording to close itself when possible.
+        """
+        if self._is_screen_recording:
+            self._should_stop_screen_recording = True
+
+    def _create_screen_record_task(self):
+        """
+        Create the screen recording task. Will not start recording if there's already a recording.
+        """
+        if self._is_screen_recording:
+            return
+
+        asyncio.create_task(self.__screen_record())
+        atexit.register(self.mark_screen_record_for_close)
+
     async def _connect_to_device(self, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
@@ -107,6 +135,7 @@ class ADB:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
                 self._device = device
+                self._create_screen_record_task()
                 return
         except OSError:
             self._device = None
@@ -136,7 +165,7 @@ class ADB:
         Returns:
              A string containing 'WIDTHxHEIGHT'.
         """
-        shell_output = await self._device.shell("wm size | awk 'END{print $3}'")
+        shell_output = await self._device.exec_out("wm size | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def get_screen_density(self) -> str:
@@ -146,20 +175,20 @@ class ADB:
         Returns:
              A string containing the pixel density.
         """
-        shell_output = await self._device.shell("wm density | awk 'END{print $3}'")
+        shell_output = await self._device.exec_out("wm density | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def set_screen_size(self):
         """
         Set the screen size to 1280x720.
         """
-        await self._device.shell("wm size 1280x720")
+        await self._device.exec_out("wm size 1280x720")
 
     async def set_screen_density(self):
         """
         Set the screen pixel density to 240.
         """
-        await self._device.shell("wm density 240")
+        await self._device.exec_out("wm density 240")
 
     async def get_memory(self) -> int:
         """
@@ -168,13 +197,23 @@ class ADB:
         Returns:
             The memory of the device in kB.
         """
-        shell_output = await self._device.shell("grep MemTotal /proc/meminfo | awk '{print $2}'")
+        shell_output = await self._device.exec_out("grep MemTotal /proc/meminfo | awk '{print $2}'")
         return int(shell_output)
 
     async def get_screen(self) -> ndarray | None:
         """
         Gets a ndarray which contains the values of the gray-scaled pixels
-        currently on the screen.
+        currently on the screen. Uses buffered frames from screen recording, available instantly.
+
+        Returns:
+            The ndarray containing the gray-scaled pixels. Is None until the first screen record frame is processed.
+        """
+        return self._latest_frame
+
+    async def get_screen_capture(self) -> ndarray | None:
+        """
+        Gets a ndarray which contains the values of the gray-scaled pixels
+        currently on the screen. Uses screencap, so will take some processing time.
 
         Returns:
             The ndarray containing the gray-scaled pixels.
@@ -237,7 +276,7 @@ class ADB:
         """
         # input tap x y comes with the downtime of tapping too fast for the game sometimes,
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
-        await self._device.shell(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
+        await self._device.exec_out(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
 
     async def is_tft_installed(self) -> bool:
         """
@@ -246,7 +285,7 @@ class ADB:
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._device.shell(f"pm list packages | grep {self.tft_package_name}")
+        shell_output = await self._device.exec_out(f"pm list packages | grep {self.tft_package_name}")
         if not shell_output:
             return False
 
@@ -273,14 +312,14 @@ class ADB:
         Returns:
              Whether TFT is the currently active window.
         """
-        shell_output = await self._device.shell("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
+        shell_output = await self._device.exec_out("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
         return shell_output.split("/")[0].replace("\n", "") == self.tft_package_name
 
     async def start_tft_app(self):
         """
         Start TFT using the activity manager (am).
         """
-        await self._device.shell(f"am start -n {self.tft_package_name}/{self._tft_activity_name}")
+        await self._device.exec_out(f"am start -n {self.tft_package_name}/{self._tft_activity_name}")
 
     async def get_tft_version(self) -> str:
         """
@@ -289,7 +328,7 @@ class ADB:
         Returns:
             The versionName of the tft package.
         """
-        return await self._device.shell(
+        return await self._device.exec_out(
             f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
         )
 
@@ -297,4 +336,61 @@ class ADB:
         """
         Send a back key press event to the device.
         """
-        await self._device.shell("input keyevent 4")
+        await self._device.exec_out("input keyevent 4")
+
+    async def __convert_frame_to_cv2(self, frame_bytes: bytes):
+        """
+        Convert frame bytes to a CV2 compatible gray image.
+
+        Args:
+            frame_bytes: Byte output of the screen record session.
+        """
+        packets = self._video_codec.parse(frame_bytes)
+        if not packets:
+            return
+
+        try:
+            frames = self._video_codec.decode(packets[0])
+        except av.error.InvalidDataError:
+            return
+        if not frames:
+            return
+
+        self._latest_frame = frames[0].to_ndarray(format="gray8").copy()  # Change to bgr24 if color is ever needed.
+
+    async def __write_frame_data(self):
+        """
+        Start a streaming shell that outputs screenrecord frame bytes and store it as a cv2 compatible image.
+        """
+        # output-format h264 > H264 is the only format that outputs to console which we can work with.
+        # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
+        # - at the end makes screenrecord output to console, if format is h264.
+        async for data in self._device.streaming_shell(
+            command="screenrecord --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+        ):
+            if self._should_stop_screen_recording:
+                break
+
+            await self.__convert_frame_to_cv2(data)
+
+    async def __screen_record(self):
+        """
+        Start the screen record session. Restarts itself until an external value stops it.
+        """
+        if self._is_screen_recording:
+            return
+
+        await self._device.exec_out("pkill -2 screenrecord")
+        logger.debug("Screen record starting.")
+
+        self._is_screen_recording = True
+        while not self._should_stop_screen_recording:
+            try:
+                await self.__write_frame_data()
+            except TcpTimeoutException:
+                logger.warning("Timed out while re-/starting screen record, waiting 5 seconds.")
+                await asyncio.sleep(5)
+
+        logger.debug("Screen record stopped.")
+        await self._device.exec_out("pkill -2 screenrecord")
+        self._is_screen_recording = False
