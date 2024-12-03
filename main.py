@@ -291,7 +291,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         await loop(adb_instance, config)
     except TcpTimeoutException:
         logger.warning("ADB device was disconnected, attempting one reconnect...")
-        await adb_instance.load(config.get_adb_port())
+        await adb_instance.load()
         if not adb_instance.is_connected():
             raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
@@ -539,9 +539,9 @@ async def main():
 
     await check_version()
 
-    adb_instance = ADB()
+    adb_instance = ADB(config)
 
-    await adb_instance.load(config.get_adb_port())
+    await adb_instance.load()
     if not adb_instance.is_connected():
         logger.error("There is no ADB device ready. Exiting.")
         return
@@ -549,10 +549,12 @@ async def main():
     logger.debug("ADB is connected, checking phone and app details")
     await check_phone_preconditions(adb_instance)
 
-    while await adb_instance.get_screen() is None:
-        logger.debug("Waiting for frame data to become available...")
-        await asyncio.sleep(0.5)
-    logger.debug("Frames are now available.")
+    if config.should_use_screen_record():
+        logger.info("The bot will use live screen recording for image searches.")
+        while await adb_instance.get_screen() is None:
+            logger.debug("Waiting for frame data to become available...")
+            await asyncio.sleep(0.5)
+        logger.debug("Frames are now available.")
 
     logger.info("Connected to ADB and device is set up correctly, starting main loop.")
 

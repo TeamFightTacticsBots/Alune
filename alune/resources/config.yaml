@@ -31,6 +31,14 @@ surrender_early: false
 # Default value : 0 (disabled = surrender as fast as possible)
 surrender_random_delay: 0
 
+# Screen recording settings.
+screen_record:
+  # Whether we should use screen recording.
+  # If false, the bot will fall back to screen capture.
+  # Screen recording saves ~600ms per screen check, but may occasionally cause a timeout.
+  # The timeout will be caught and handled.
+  enabled: true
+
 # Configuration for chance events in the bot, in percent.
 chances:
   # The chance % to buy experience per check - configuring 50 means it's a 50% chance.
@@ -44,6 +52,6 @@ adb_port: 5555
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 8
+version: 9
 # Version of the TFT set.
 set: 13

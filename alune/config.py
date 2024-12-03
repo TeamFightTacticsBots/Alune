@@ -212,3 +212,12 @@ class AluneConfig:
             The queue timeout in seconds.
         """
         return self._config["queue_timeout"]
+
+    def should_use_screen_record(self) -> bool:
+        """
+        Get the screen record setting the user wants.
+
+        Returns:
+            Whether we should use screen recording.
+        """
+        return self._config["screen_record"]["enabled"]

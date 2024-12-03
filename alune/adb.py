@@ -13,6 +13,7 @@ from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.exceptions import TcpTimeoutException
 import av
+from av.error import InvalidDataError  # pylint: disable=no-name-in-module
 import cv2
 from loguru import logger
 import numpy
@@ -20,6 +21,7 @@ from numpy import ndarray
 import psutil
 
 from alune import helpers
+from alune.config import AluneConfig
 from alune.images import ClickButton
 from alune.images import ImageButton
 from alune.screen import BoundingBox
@@ -28,13 +30,13 @@ from alune.screen import ImageSearchResult
 
 # The amount of attributes is fine in my opinion.
 # We could split off screen recording into its own class, but I don't see the need to.
-class ADB:  # pylint-disable: too-many-instance-attributes
+class ADB:  # pylint: disable=too-many-instance-attributes
     """
     Class to hold the connection to an ADB connection via TCP.
     USB connection is possible, but not supported at the moment.
     """
 
-    def __init__(self):
+    def __init__(self, config: AluneConfig):
         """
         Initiates base values for the ADB instance.
         """
@@ -43,21 +45,23 @@ class ADB:  # pylint-disable: too-many-instance-attributes
         self._random = random.Random()
         self._rsa_signer = None
         self._device = None
+        self._config = config
+        self._default_port = config.get_adb_port()
+
+        if not config.should_use_screen_record():
+            return
 
         self._video_codec = av.codec.CodecContext.create("h264", "r")
         self._is_screen_recording = False
         self._should_stop_screen_recording = False
         self._latest_frame = None
 
-    async def load(self, port: int):
+    async def load(self):
         """
         Load the RSA signer and attempt to connect to a device via ADB TCP.
-
-        Args:
-            port: The port to attempt to connect to.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device(port)
+        await self._connect_to_device(self._default_port)
 
     async def _load_rsa_signer(self):
         """
@@ -208,7 +212,9 @@ class ADB:  # pylint-disable: too-many-instance-attributes
         Returns:
             The ndarray containing the gray-scaled pixels. Is None until the first screen record frame is processed.
         """
-        return self._latest_frame
+        if self._config.should_use_screen_record():
+            return self._latest_frame
+        return await self.get_screen_capture()
 
     async def get_screen_capture(self) -> ndarray | None:
         """
@@ -351,7 +357,7 @@ class ADB:  # pylint-disable: too-many-instance-attributes
 
         try:
             frames = self._video_codec.decode(packets[0])
-        except av.error.InvalidDataError:
+        except InvalidDataError:
             return
         if not frames:
             return
