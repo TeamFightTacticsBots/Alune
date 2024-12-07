@@ -170,7 +170,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
              A string containing 'WIDTHxHEIGHT'.
         """
-        shell_output = await self._device.exec_out("wm size | awk 'END{print $3}'")
+        shell_output = await self._wrap_shell_call("wm size | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def get_screen_density(self) -> str:
@@ -180,20 +180,20 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
              A string containing the pixel density.
         """
-        shell_output = await self._device.exec_out("wm density | awk 'END{print $3}'")
+        shell_output = await self._wrap_shell_call("wm density | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
     async def set_screen_size(self):
         """
         Set the screen size to 1280x720.
         """
-        await self._device.exec_out("wm size 1280x720")
+        await self._wrap_shell_call("wm size 1280x720")
 
     async def set_screen_density(self):
         """
         Set the screen pixel density to 240.
         """
-        await self._device.exec_out("wm density 240")
+        await self._wrap_shell_call("wm density 240")
 
     async def get_memory(self) -> int:
         """
@@ -202,7 +202,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
             The memory of the device in kB.
         """
-        shell_output = await self._device.exec_out("grep MemTotal /proc/meminfo | awk '{print $2}'")
+        shell_output = await self._wrap_shell_call("grep MemTotal /proc/meminfo | awk '{print $2}'")
         return int(shell_output)
 
     async def get_screen(self) -> ndarray | None:
@@ -283,7 +283,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         # input tap x y comes with the downtime of tapping too fast for the game sometimes,
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
-        await self._device.exec_out(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
+        await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
 
     async def is_tft_installed(self) -> bool:
         """
@@ -292,7 +292,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._device.exec_out(f"pm list packages | grep {self.tft_package_name}")
+        shell_output = await self._wrap_shell_call(f"pm list packages | grep {self.tft_package_name}")
         if not shell_output:
             return False
 
@@ -319,14 +319,14 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
              Whether TFT is the currently active window.
         """
-        shell_output = await self._device.exec_out("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
+        shell_output = await self._wrap_shell_call("dumpsys window | grep -E 'mCurrentFocus' | awk '{print $3}'")
         return shell_output.split("/")[0].replace("\n", "") == self.tft_package_name
 
     async def start_tft_app(self):
         """
         Start TFT using the activity manager (am).
         """
-        await self._device.exec_out(f"am start -n {self.tft_package_name}/{self._tft_activity_name}")
+        await self._wrap_shell_call(f"am start -n {self.tft_package_name}/{self._tft_activity_name}")
 
     async def get_tft_version(self) -> str:
         """
@@ -335,7 +335,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
             The versionName of the tft package.
         """
-        return await self._device.exec_out(
+        return await self._wrap_shell_call(
             f"dumpsys package {self.tft_package_name} | grep versionName | sed s/[[:space:]]*versionName=//g"
         )
 
@@ -343,7 +343,28 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Send a back key press event to the device.
         """
-        await self._device.exec_out("input keyevent 4")
+        await self._wrap_shell_call("input keyevent 4")
+
+    async def _wrap_shell_call(self, shell_command: str, retries: int = 0):
+        """
+        Wrapper for shell commands to catch timeout exceptions.
+        Retries 3 times with incremental backoff.
+
+        Args:
+            shell_command: The shell command to call.
+            retries: Optional, the amount of attempted retries so far.
+
+        Returns:
+            The output of the shell command.
+        """
+        try:
+            return await self._device.exec_out(shell_command)
+        except TcpTimeoutException:
+            if retries == 3:
+                raise
+            logger.debug(f"Timed out while calling '{shell_command}', retrying {3 - retries} times.")
+            await asyncio.sleep(1 + (1 * retries))
+            return await self._wrap_shell_call(shell_command, retries=retries + 1)
 
     async def __convert_frame_to_cv2(self, frame_bytes: bytes):
         """
@@ -374,7 +395,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
-            command="screenrecord --time-limit 10 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+            command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
         ):
             if self._should_stop_screen_recording:
                 break
