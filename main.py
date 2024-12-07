@@ -11,7 +11,6 @@ import json
 import os
 from random import Random
 import sys
-import time
 from urllib.error import HTTPError
 from urllib.error import URLError
 import urllib.request
@@ -572,7 +571,19 @@ async def main():
             "This is recommended for passes that get experience for play time, like the event passes."
         )
 
-    await loop_disconnect_wrapper(adb_instance, config)
+    try:
+        await loop_disconnect_wrapper(adb_instance, config)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Thanks for using Alune, see you next time!")
+        adb_instance.mark_screen_record_for_close()
+        await asyncio.sleep(1)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.exception(e)
+        logger.warning(
+            "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
+        )
+        adb_instance.mark_screen_record_for_close()
+        await asyncio.sleep(10)
 
 
 async def delay_next_game():
@@ -627,13 +638,4 @@ def setup_hotkeys() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Thanks for using Alune, see you next time!")
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.exception(e)
-        logger.warning(
-            "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
-        )
-        time.sleep(10)
+    asyncio.run(main())
