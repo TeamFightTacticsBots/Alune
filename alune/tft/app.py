@@ -19,9 +19,6 @@ from alune.images import Image
 from alune.screen import ImageSearchResult
 from alune.tft.game import TFTGame
 
-PAUSE_LOGIC = False
-PLAY_NEXT_GAME = True
-
 
 class GameState(StrEnum):
     """
@@ -135,7 +132,7 @@ class TFTApp:
                 screenshot = await self.adb.get_screen()
                 search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 while not search_result:
-                    if PAUSE_LOGIC:
+                    if self._pause:
                         await asyncio.sleep(5)
                         continue
 
@@ -215,7 +212,7 @@ class TFTApp:
         while True:
             await self.delay_next_game()
 
-            if PAUSE_LOGIC:
+            if self._pause:
                 await asyncio.sleep(5)
                 continue
 
