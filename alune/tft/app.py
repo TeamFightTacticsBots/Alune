@@ -1,6 +1,7 @@
 """
 Module to handle all TFT app related interactions.
 """
+
 import asyncio
 from dataclasses import dataclass
 from enum import auto
@@ -16,7 +17,7 @@ from alune.config import AluneConfig
 from alune.images import Button
 from alune.images import Image
 from alune.screen import ImageSearchResult
-from alune.tft.game import take_game_decision
+from alune.tft.game import TFTGame
 
 PAUSE_LOGIC = False
 PLAY_NEXT_GAME = True
@@ -52,9 +53,11 @@ class TFTApp:
     """
     Class to hold variables and methods relating to handling the overarching TFT app.
     """
+
     def __init__(self, adb_instance: ADB, alune_config: AluneConfig):
         self.adb = adb_instance
         self.config = alune_config
+        self.game = TFTGame(adb_instance, alune_config)
         self._pause = False
         self._play_next_game = True
         self.setup_hotkeys()
@@ -142,7 +145,7 @@ class TFTApp:
                         await asyncio.sleep(10)
                         break
 
-                    await take_game_decision(self.adb, self.config)
+                    await self.game.take_game_decision()
                     await asyncio.sleep(5)
                     screenshot = await self.adb.get_screen()
 
