@@ -19,20 +19,21 @@ from alune import helpers
 from alune.adb import ADB
 from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
-from alune.tft.app import loop, setup_hotkeys
+from alune.tft.app import TFTApp
 
 
-async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
+async def loop_disconnect_wrapper(adb_instance: ADB, alune_config: AluneConfig):
     """
     Wraps the main loop in a TcpTimeoutException catcher, to catch device disconnects.
     Attempts to re-connect once, then gives up and exits.
 
     Args:
         adb_instance: The adb instance to run the main loop on.
-        config: An instance of the alune config to use.
+        alune_config: An instance of the alune config to use.
     """
+    tft_app = TFTApp(adb_instance, alune_config)
     try:
-        await loop(adb_instance, config)
+        await tft_app.loop()
     except TcpTimeoutException:
         logger.warning("ADB device was disconnected, attempting one reconnect...")
         adb_instance.mark_screen_record_for_close()
@@ -41,7 +42,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB, config: AluneConfig):
         if not adb_instance.is_connected():
             raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
-        await loop_disconnect_wrapper(adb_instance, config)
+        await loop_disconnect_wrapper(adb_instance, alune_config)
 
 
 async def check_phone_preconditions(adb_instance: ADB):
@@ -124,7 +125,6 @@ async def main():
     logs_path = helpers.get_application_path("alune-output/logs")
     os.makedirs(logs_path, exist_ok=True)
     logger.add(logs_path + "/{time}.log", level="DEBUG", retention=10)
-    setup_hotkeys()
 
     config = AluneConfig()
     if config.get_log_level() != "DEBUG":

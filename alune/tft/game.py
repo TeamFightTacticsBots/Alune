@@ -1,6 +1,7 @@
+"""
+Module to handle all TFT game related interactions.
+"""
 import asyncio
-from dataclasses import dataclass
-from enum import StrEnum, auto
 from random import Random
 
 from loguru import logger
@@ -9,79 +10,11 @@ from numpy import ndarray
 from alune import screen
 from alune.adb import ADB
 from alune.config import AluneConfig
-from alune.images import Button, Image, BoundingBox
-from alune.screen import ImageSearchResult
-
+from alune.images import BoundingBox
+from alune.images import Button
+from alune.images import Image
 
 _random = Random()
-
-
-class GameState(StrEnum):
-    """
-    State the game or app is in.
-    """
-
-    LOADING = auto()
-    MAIN_MENU = auto()
-    CHOOSE_MODE = auto()
-    LOBBY = auto()
-    QUEUE_MISSED = auto()
-    IN_GAME = auto()
-    POST_GAME_DAWN_OF_HEROES = auto()
-    POST_GAME = auto()
-    CHOICE_CONFIRM = auto()
-
-
-@dataclass
-class GameStateImageResult:
-    """
-    Combines a game state with an image search result (both optional)
-    """
-
-    game_state: GameState
-    image_result: ImageSearchResult | None = None
-
-
-# pylint: disable-next=too-many-return-statements
-async def get_game_state(screenshot: ndarray, config: AluneConfig) -> GameStateImageResult | None:
-    """
-    Get the current app/game state based off a screenshot.
-
-    Args:
-        screenshot: A screenshot that was taken by :class:`alune.adb.ADB`
-        config: An instance of the alune config to use.
-    """
-    if screen.get_button_on_screen(screenshot, Button.check_choice):
-        return GameStateImageResult(GameState.CHOICE_CONFIRM)
-
-    if screen.get_on_screen(screenshot, Image.RITO_LOGO):
-        return GameStateImageResult(GameState.LOADING)
-
-    if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(screenshot, Image.BACK):
-        return GameStateImageResult(GameState.MAIN_MENU)
-
-    game_mode_image = Image.DAWN_OF_HEROES if config.get_game_mode() == "dawn of heroes" else Image.NORMAL_GAME
-    if image_result := screen.get_on_screen(screenshot, game_mode_image):
-        return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
-
-    if screen.get_button_on_screen(screenshot, Button.check):
-        return GameStateImageResult(GameState.QUEUE_MISSED)
-
-    if screen.get_on_screen(screenshot, Image.CLOSE_LOBBY) and screen.get_button_on_screen(screenshot, Button.play):
-        return GameStateImageResult(GameState.LOBBY)
-
-    if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
-        return GameStateImageResult(GameState.IN_GAME)
-
-    if screen.get_on_screen(screenshot, Image.BACK) and screen.get_button_on_screen(
-        screenshot, Button.dawn_of_heroes_continue
-    ):
-        return GameStateImageResult(GameState.POST_GAME_DAWN_OF_HEROES)
-
-    if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
-        return GameStateImageResult(GameState.POST_GAME)
-
-    return None
 
 
 async def handle_augments(screenshot: ndarray, adb_instance: ADB):
