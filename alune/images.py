@@ -143,7 +143,6 @@ class Image(StrEnum):
     COLLAPSE_TOP_BAR = auto()
     PHASE_3_2_FULL = auto()
     NORMAL_GAME = auto()
-    DAWN_OF_HEROES = auto()
 
 
 class Trait(StrEnum):
@@ -191,45 +190,6 @@ class Trait(StrEnum):
     SORCERER = auto()
     VISIONARY = auto()
     WATCHER = auto()
-
-
-class DawnOfHeroesTrait(StrEnum):
-    """
-    The same as ImageEnum, but images are intentionally in a different place and will
-    change with each set.
-    Specifically for dawn of heroes traits.
-    """
-
-    # noinspection PyMethodParameters
-    # pylint: disable-next=no-self-argument,redefined-outer-name
-    def _generate_next_value_(name, start, count, last_values):
-        return helpers.get_resource_path(f"alune/images/traits/dawn_of_heroes/{name.lower()}.png")
-
-    @classmethod
-    def get_default_traits(cls):
-        """
-        Gets a list of default traits the bot should use.
-
-        Returns:
-            A list of the traits to be played by default, if the user misconfigures.
-        """
-        return [cls.DAWNBRINGER]
-
-    # Dawn of Heroes
-    ASSASSIN = auto()
-    BRAWLER = auto()
-    CANNONEER = auto()
-    CAVALIER = auto()
-    DAWNBRINGER = auto()
-    DRACONIC = auto()
-    FORGOTTEN = auto()
-    HELLION = auto()
-    NIGHTBRINGER = auto()
-    RANGER = auto()
-    REDEEMED = auto()
-    SENTINEL = auto()
-    SKIRMISHER = auto()
-    SPELLWEAVER = auto()
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods
@@ -311,10 +271,6 @@ class Button:
     choose_one_hidden = ImageButton(
         click_box=BoundingBox(1155, 595, 1242, 682),
         capture_area=BoundingBox(1128, 568, 1269, 709),
-    )
-    dawn_of_heroes_continue = ImageButton(
-        click_box=BoundingBox(968, 618, 1211, 668),
-        capture_area=BoundingBox(950, 610, 1230, 640),
     )
 
     # Buttons without an image.

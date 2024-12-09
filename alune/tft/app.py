@@ -31,7 +31,6 @@ class GameState(StrEnum):
     LOBBY = auto()
     QUEUE_MISSED = auto()
     IN_GAME = auto()
-    POST_GAME_DAWN_OF_HEROES = auto()
     POST_GAME = auto()
     CHOICE_CONFIRM = auto()
 
@@ -147,18 +146,12 @@ class TFTApp:
                     screenshot = await self.adb.get_screen()
 
                     game_state = await self.get_app_state(screenshot)
-                    if game_state and game_state.game_state in {
-                        GameState.POST_GAME,
-                        GameState.POST_GAME_DAWN_OF_HEROES,
-                    }:
+                    if game_state and game_state.game_state == GameState.POST_GAME:
                         break
 
                     search_result = screen.get_button_on_screen(screenshot, Button.exit_now)
                 await self.adb.click_button(Button.exit_now)
                 await asyncio.sleep(10)
-            case GameState.POST_GAME_DAWN_OF_HEROES:
-                logger.info("App state is after a game for dawn of heroes, clicking 'Continue'.")
-                await self.adb.click_button(Button.dawn_of_heroes_continue)
             case GameState.POST_GAME:
                 logger.info("App state is post game, clicking 'Play again'.")
                 await self.adb.click_button(Button.play)
@@ -182,8 +175,7 @@ class TFTApp:
         ):
             return GameStateImageResult(GameState.MAIN_MENU)
 
-        game_mode_image = Image.DAWN_OF_HEROES if self.config.get_game_mode() == "dawn of heroes" else Image.NORMAL_GAME
-        if image_result := screen.get_on_screen(screenshot, game_mode_image):
+        if image_result := screen.get_on_screen(screenshot, Image.NORMAL_GAME):
             return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
 
         if screen.get_button_on_screen(screenshot, Button.check):
@@ -194,11 +186,6 @@ class TFTApp:
 
         if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
             return GameStateImageResult(GameState.IN_GAME)
-
-        if screen.get_on_screen(screenshot, Image.BACK) and screen.get_button_on_screen(
-            screenshot, Button.dawn_of_heroes_continue
-        ):
-            return GameStateImageResult(GameState.POST_GAME_DAWN_OF_HEROES)
 
         if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):
             return GameStateImageResult(GameState.POST_GAME)

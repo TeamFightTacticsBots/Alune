@@ -4,7 +4,7 @@
 log_level: "INFO"
 
 # The game mode the bot should play.
-# Currently valid game modes: normal, dawn of heroes
+# Currently valid game modes: normal
 # Please note that changing this may require changing traits as well.
 game_mode: "normal"
 
@@ -16,7 +16,6 @@ queue_timeout: 150
 # The trait names are almost as written in-game, with spaces replaced by _ and . and : being ignored.
 # For example: admin, star_guardian, mecha_prime, lasercorps
 # For a full list of valid traits, visit https://github.com/TeamFightTacticsBots/Alune/tree/main/alune/images/traits
-# Recommended dawn of heroes traits: dawnbringer
 traits:
   - rebel
   - sentinel
