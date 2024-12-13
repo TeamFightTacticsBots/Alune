@@ -131,20 +131,16 @@ class TFTGame:
         """
         screenshot = await self.adb.get_screen()
 
+        is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
+        if is_in_carousel:
+            logger.debug("Is on carousel, clicking a random point within bounds")
+            await self.adb.click_bounding_box(BoundingBox(420, 180, 825, 425))
+            return
+
         is_on_other_board = screen.get_button_on_screen(screenshot, Button.return_to_board)
         if is_on_other_board:
-            logger.debug("Is on other board, checking if we are on a carousel")
+            logger.debug("Is on other board, returning to own board")
             await self.adb.click_button(Button.return_to_board)
-            await asyncio.sleep(1)
-
-            screenshot = await self.adb.get_screen()
-            is_in_carousel = screen.get_on_screen(screenshot, Image.CAROUSEL)
-            if is_in_carousel:
-                logger.debug("Is on carousel, clicking a random point within bounds")
-                await self.adb.click_button(Button.return_to_board)
-                await asyncio.sleep(2)
-                # Move to a random point in the carousel area
-                await self.adb.click_bounding_box(BoundingBox(420, 180, 825, 425))
             return
 
         await self.handle_augments(screenshot)
