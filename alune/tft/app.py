@@ -29,6 +29,7 @@ class GameState(StrEnum):
     MAIN_MENU = auto()
     CHOOSE_MODE = auto()
     LOBBY = auto()
+    IN_QUEUE = auto()
     QUEUE_MISSED = auto()
     IN_GAME = auto()
     POST_GAME = auto()
@@ -73,10 +74,11 @@ class TFTApp:
         """
         Utility method to queue a match.
         """
+        # TODO We can refactor this to use the new queue buttons for better detection
         try:
             await asyncio.wait_for(self.wait_for_accept_button(), timeout=self.config.get_queue_timeout())
         except asyncio.TimeoutError:
-            await self.adb.click_button(Button.exit_lobby)
+            await self.adb.click_button(Button.exit_queue)
             logger.info("Queue exited due to timeout.")
             return
         await self.adb.click_button(Button.accept)
@@ -181,8 +183,19 @@ class TFTApp:
         if screen.get_button_on_screen(screenshot, Button.check):
             return GameStateImageResult(GameState.QUEUE_MISSED)
 
-        if screen.get_on_screen(screenshot, Image.CLOSE_LOBBY) and screen.get_button_on_screen(screenshot, Button.play):
+        if (
+            screen.get_on_screen(screenshot, Image.INVITE_FRIENDS)
+            and screen.get_on_screen(screenshot, Image.TEAM_PLANNER)
+            and screen.get_button_on_screen(screenshot, Button.play)
+        ):
             return GameStateImageResult(GameState.LOBBY)
+
+        if (
+            screen.get_on_screen(screenshot, Image.INVITE_FRIENDS_DISABLED)
+            and screen.get_on_screen(screenshot, Image.TEAM_PLANNER)
+            and screen.get_on_screen(screenshot, Image.CANCEL_QUEUE)
+        ):
+            return GameStateImageResult(GameState.IN_QUEUE)
 
         if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
             return GameStateImageResult(GameState.IN_GAME)
