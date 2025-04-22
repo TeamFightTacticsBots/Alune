@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 120
-exclude = .git,.github,build,captures,dist,alune-venv,__pycache__
+exclude = .git,.github,build,captures,dist,*venv,__pycache__
 per-file-ignores = alune/screen.py:E203
