@@ -51,6 +51,6 @@ adb_port: 5555
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 10
+version: 11
 # Version of the TFT set.
 set: 15
