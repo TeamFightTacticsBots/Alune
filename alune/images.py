@@ -167,31 +167,29 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.STREET_DEMON, cls.TECHIE]
+        return [cls.EDGELORD, cls.PRODIGY]
 
-    AMP = auto()
-    ANIMA_SQUAD = auto()
     BASTION = auto()
-    BOOMBOT = auto()
-    BRUISER = auto()
-    CYBERBOSS = auto()
-    CYPHER = auto()
-    DIVINICORP = auto()
-    DYNAMO = auto()
+    BATTLE_ACADEMIA = auto()
+    CRYSTAL_GAMBIT = auto()
+    DUELIST = auto()
+    EDGELORD = auto()
     EXECUTIONER = auto()
-    EXOTECH = auto()
-    GOD_OF_THE_NET = auto()
-    GOLDEN_OX = auto()
-    MARKSMAN = auto()
-    NITRO = auto()
-    OVERLORD = auto()
-    RAPIDFIRE = auto()
-    SLAYER = auto()
+    HEAVYWEIGHT = auto()
+    JUGGERNAUT = auto()
+    LUCHADOR = auto()
+    MENTOR = auto()
+    MIGHTY_MECH = auto()
+    MONSTER_TRAINER = auto()
+    PRODIGY = auto()
+    SNIPER = auto()
+    SORCERER = auto()
+    SOUL_FIGHTER = auto()
+    STAR_GUARDIAN = auto()
     STRATEGIST = auto()
-    STREET_DEMON = auto()
-    SYNDICATE = auto()
-    TECHIE = auto()
-    VANGUARD = auto()
+    SUPREME_CELLS = auto()
+    THE_CREW = auto()
+    WRAITH = auto()
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods
