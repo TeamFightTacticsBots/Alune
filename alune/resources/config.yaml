@@ -28,7 +28,7 @@ surrender_early: true
 # The bot will pick a random number between 1 and surrender_random_delay.
 # The bot will then add that number as a delay before it surrenders.
 # Default value : 0 (disabled = surrender as fast as possible)
-surrender_random_delay: 10
+surrender_random_delay: 60
 
 # Screen recording settings.
 screen_record:
@@ -53,4 +53,4 @@ adb_port: 5555
 # Version of the YAML.
 version: 11
 # Version of the TFT set.
-set: 15
+set: 16

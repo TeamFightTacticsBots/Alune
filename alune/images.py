@@ -190,6 +190,8 @@ class Trait(StrEnum):
     SUPREME_CELLS = auto()
     THE_CREW = auto()
     WRAITH = auto()
+    SHADOW_ISLES = auto()
+    WARDEN = auto()
 
 
 class ClickButton:  # pylint: disable=too-few-public-methods
