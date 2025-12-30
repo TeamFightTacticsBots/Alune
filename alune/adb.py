@@ -7,6 +7,7 @@ import atexit
 import os.path
 import random
 import logging
+from contextlib import suppress
 
 # Third-party imports
 from adb_shell.adb_device import AdbDeviceTcp
@@ -57,6 +58,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._latest_frame_ts = 0.0
         self._screen_record_task = None
 
+        # Prevent restart storms when frames go stale
+        self._last_screen_record_restart_ts = 0.0
+        self._screen_record_restart_cooldown_s = 30.0
+        self._restart_lock = asyncio.Lock()
+
     async def load(self):
         """
         Load the RSA signer and attempt to connect to a device via ADB TCP.
@@ -93,7 +99,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         logger.info("Scanning local ports for an open ADB connection...")
 
         connections = [
-            conn for conn in psutil.net_connections("tcp4")
+            conn
+            for conn in psutil.net_connections("tcp4")
             if conn.laddr.port >= 5555 and conn.status == "LISTEN"
         ]
 
@@ -118,6 +125,53 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Tells the screen recording to close itself when possible.
         """
         self._should_stop_screen_recording = True
+
+    async def _restart_screen_recording(self, reason: str):
+        """
+        Restart screen recording safely and with cooldown to avoid restart storms.
+        """
+        # If screenrecord isn't enabled, nothing to do.
+        if not self._config.should_use_screen_record():
+            return
+
+        async with self._restart_lock:
+            now = asyncio.get_running_loop().time()
+            if (now - self._last_screen_record_restart_ts) < self._screen_record_restart_cooldown_s:
+                logger.debug(
+                    "Skipping screen record restart "
+                    f"(cooldown {self._screen_record_restart_cooldown_s}s) reason={reason}"
+                )
+                return
+
+            self._last_screen_record_restart_ts = now
+            logger.warning(f"Restarting screen recording (reason: {reason}).")
+
+            # Request current task to stop.
+            self._should_stop_screen_recording = True
+
+            task = self._screen_record_task
+            if task is not None and not task.done():
+                # Give the task a chance to exit on its own.
+                with suppress(asyncio.TimeoutError):
+                    await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+
+            # If still running, cancel it as a last resort.
+            task = self._screen_record_task
+            if task is not None and not task.done():
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+
+            self._screen_record_task = None
+            self._is_screen_recording = False
+
+            # Best-effort kill lingering screenrecord process.
+            with suppress(Exception):
+                await self._device.exec_out("pkill -2 screenrecord")
+
+            # Start fresh.
+            self._should_stop_screen_recording = False
+            self.create_screen_record_task()
 
     def create_screen_record_task(self):
         """
@@ -214,14 +268,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             The ndarray containing the gray-scaled pixels. Is None until the first screen record frame is processed.
         """
         if self._config.should_use_screen_record():
-            # If we have frames but they stopped updating, restart screen recording.
+            # If we have frames but they stopped updating, restart screen recording (debounced).
             if self._latest_frame is not None:
                 now = asyncio.get_running_loop().time()
                 if (now - self._latest_frame_ts) > 15:
-                    logger.warning("Screen record frames are stale (>15s). Restarting screen recording.")
-                    self.mark_screen_record_for_close()
-                    await asyncio.sleep(0.2)
-                    self.create_screen_record_task()
+                    await self._restart_screen_recording(reason="stale_frames>15s")
             return self._latest_frame
         return await self._get_screen_capture()
 
@@ -405,7 +456,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
             command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -",
-            decode=False
+            decode=False,
         ):
             if self._should_stop_screen_recording:
                 break
@@ -416,13 +467,17 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Start the screen record session. Restarts itself until an external value stops it.
         """
+        # If already recording, don't spawn another loop.
         if self._is_screen_recording:
             return
 
-        await self._device.exec_out("pkill -2 screenrecord")
-        logger.debug("Screen record starting.")
+        # Make sure no old screenrecord process is lingering.
+        with suppress(Exception):
+            await self._device.exec_out("pkill -2 screenrecord")
 
+        logger.debug("Screen record starting.")
         self._is_screen_recording = True
+
         while not self._should_stop_screen_recording:
             try:
                 await self.__write_frame_data()
@@ -431,12 +486,18 @@ class ADB:  # pylint: disable=too-many-instance-attributes
                     "Timed out while re-/starting screen record, "
                     "killing screenrecord and retrying in 5 seconds."
                 )
-                try:
+                with suppress(Exception):
                     await self._device.exec_out("pkill -2 screenrecord")
-                except Exception:
-                    pass
+                await asyncio.sleep(5)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.opt(exception=exc).warning("Unexpected error in screen record loop; retrying in 5 seconds.")
+                with suppress(Exception):
+                    await self._device.exec_out("pkill -2 screenrecord")
                 await asyncio.sleep(5)
 
         logger.debug("Screen record stopped.")
-        await self._device.exec_out("pkill -2 screenrecord")
+        with suppress(Exception):
+            await self._device.exec_out("pkill -2 screenrecord")
+
         self._is_screen_recording = False
+        self._screen_record_task = None
