@@ -6,7 +6,9 @@ import asyncio
 import atexit
 import os.path
 import random
+import logging
 
+# Third-party imports
 from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
@@ -20,16 +22,13 @@ import numpy
 from numpy import ndarray
 import psutil
 
+# Local imports
 from alune import helpers
 from alune.config import AluneConfig
-from alune.images import ClickButton
-from alune.images import ImageButton
-from alune.screen import BoundingBox
-from alune.screen import ImageSearchResult
+from alune.images import ClickButton, ImageButton
+from alune.screen import BoundingBox, ImageSearchResult
 
 
-# The amount of attributes is fine in my opinion.
-# We could split off screen recording into its own class, but I don't see the need to.
 class ADB:  # pylint: disable=too-many-instance-attributes
     """
     Class to hold the connection to an ADB connection via TCP.
@@ -55,6 +54,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._is_screen_recording = False
         self._should_stop_screen_recording = False
         self._latest_frame = None
+        self._latest_frame_ts = 0.0
         self._screen_record_task = None
 
     async def load(self):
@@ -93,7 +93,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         logger.info("Scanning local ports for an open ADB connection...")
 
         connections = [
-            conn for conn in psutil.net_connections("tcp4") if conn.laddr.port >= 5555 and conn.status == "LISTEN"
+            conn for conn in psutil.net_connections("tcp4")
+            if conn.laddr.port >= 5555 and conn.status == "LISTEN"
         ]
 
         if len(connections) > 9:
@@ -106,7 +107,6 @@ class ADB:  # pylint: disable=too-many-instance-attributes
                 if adb_device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=0.5, read_timeout_s=0.5):
                     adb_device.close()
                     return conn.laddr.port
-            # Reason for disable: The code above can throw a lot of different exceptions, this is the simplest solution.
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.debug(f"Port {conn.laddr.port} threw '{e}'.")
 
@@ -117,20 +117,18 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Tells the screen recording to close itself when possible.
         """
-        if self._is_screen_recording:
-            self._should_stop_screen_recording = True
-            # self._is_screen_recording = False # Remove it so that a new recording can be started later.
+        self._should_stop_screen_recording = True
 
     def create_screen_record_task(self):
         """
         Create the screen recording task. Will not start recording if there's already a recording.
         """
-        if self._is_screen_recording:
+        if self._screen_record_task is not None and not self._screen_record_task.done():
             return
 
         self._should_stop_screen_recording = False
-        #asyncio.create_task(self.__screen_record())
-        self._screen_record_task = asyncio.create_task(self.__screen_record()) # Keep reference to avoid garbage collection.
+        # Keep reference to avoid garbage collection.
+        self._screen_record_task = asyncio.create_task(self.__screen_record())
         atexit.register(self.mark_screen_record_for_close)
 
     async def _connect_to_device(self, port: int, retry_with_scan: bool = True):
@@ -216,6 +214,14 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             The ndarray containing the gray-scaled pixels. Is None until the first screen record frame is processed.
         """
         if self._config.should_use_screen_record():
+            # If we have frames but they stopped updating, restart screen recording.
+            if self._latest_frame is not None:
+                now = asyncio.get_running_loop().time()
+                if (now - self._latest_frame_ts) > 15:
+                    logger.warning("Screen record frames are stale (>15s). Restarting screen recording.")
+                    self.mark_screen_record_for_close()
+                    await asyncio.sleep(0.2)
+                    self.create_screen_record_task()
             return self._latest_frame
         return await self._get_screen_capture()
 
@@ -386,7 +392,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         if not frames:
             return
 
-        self._latest_frame = frames[0].to_ndarray(format="gray8").copy()  # Change to bgr24 if color is ever needed.
+        self._latest_frame = frames[0].to_ndarray(format="gray8").copy()
+        self._latest_frame_ts = asyncio.get_running_loop().time()
 
     async def __write_frame_data(self):
         """
@@ -397,7 +404,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
-            command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+            command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -",
+            decode=False
         ):
             if self._should_stop_screen_recording:
                 break
@@ -419,7 +427,14 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             try:
                 await self.__write_frame_data()
             except TcpTimeoutException:
-                logger.warning("Timed out while re-/starting screen record, waiting 5 seconds.")
+                logger.warning(
+                    "Timed out while re-/starting screen record, "
+                    "killing screenrecord and retrying in 5 seconds."
+                )
+                try:
+                    await self._device.exec_out("pkill -2 screenrecord")
+                except Exception:
+                    pass
                 await asyncio.sleep(5)
 
         logger.debug("Screen record stopped.")
