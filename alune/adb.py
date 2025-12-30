@@ -55,6 +55,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._is_screen_recording = False
         self._should_stop_screen_recording = False
         self._latest_frame = None
+        self._screen_record_task = None
 
     async def load(self):
         """
@@ -118,7 +119,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         if self._is_screen_recording:
             self._should_stop_screen_recording = True
-            self._is_screen_recording = False
+            # self._is_screen_recording = False # Remove it so that a new recording can be started later.
 
     def create_screen_record_task(self):
         """
@@ -128,7 +129,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             return
 
         self._should_stop_screen_recording = False
-        asyncio.create_task(self.__screen_record())
+        #asyncio.create_task(self.__screen_record())
+        self._screen_record_task = asyncio.create_task(self.__screen_record()) # Keep reference to avoid garbage collection.
         atexit.register(self.mark_screen_record_for_close)
 
     async def _connect_to_device(self, port: int, retry_with_scan: bool = True):

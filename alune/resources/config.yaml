@@ -1,7 +1,7 @@
 # The level to log information at. The higher the level, the less you will see.
 # We do not recommend setting it higher than WARNING, but support it.
 # Valid levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
-log_level: "INFO"
+log_level: "DEBUG"
 
 # The game mode the bot should play.
 # Currently valid game modes: normal
