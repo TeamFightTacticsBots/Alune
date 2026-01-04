@@ -17,8 +17,8 @@ queue_timeout: 150
 # For example: admin, star_guardian, mecha_prime, lasercorps
 # For a full list of valid traits, visit https://github.com/TeamFightTacticsBots/Alune/tree/main/alune/images/traits
 traits:
-  - edgelord
-  - prodigy
+  - yordle
+  - arcanist
 
 # Determines whether the bot should surrender as soon as possible (after round 3-1)
 # Valid values : true, false
@@ -36,7 +36,7 @@ screen_record:
   # If false, the bot will fall back to screen capture.
   # Screen recording saves ~600ms per screen check, but may occasionally cause a timeout.
   # The timeout will be caught and handled.
-  enabled: true
+  enabled: false
 
 # Configuration for chance events in the bot, in percent.
 chances:
@@ -51,6 +51,6 @@ adb_port: 5555
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 11
+version: 12
 # Version of the TFT set.
-set: 15
+set: 16
