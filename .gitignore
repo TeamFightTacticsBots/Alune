@@ -17,3 +17,6 @@ dist/
 # Project specific files
 adb_key*
 alune-output/
+
+# Dev tooling
+CLAUDE.md
