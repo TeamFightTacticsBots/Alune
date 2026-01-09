@@ -64,7 +64,7 @@ The TFT bot is available as a Windows executable for convenience. Running from s
    1. PowerShell: `alune-venv\Scripts\Activate.ps1`, Zsh/Bash: `alune-venv/bin/activate`  
    2. This should put `(alune-venv)` in the front of your shell prompt string.
 8. Install the project dependencies: `pip install .`
-   1. If you want to install for a development environment, use `pip install .[dev]`
+   1. If you want to install for a development environment, use `pip install '.[dev]'`
 
 ## Running
 

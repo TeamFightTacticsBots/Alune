@@ -169,7 +169,6 @@ class Trait(StrEnum):
         """
         return [cls.YORDLE, cls.ARCANIST]
 
-
     ARCANIST = auto()
     BILGEWATER = auto()
     BRUISER = auto()
