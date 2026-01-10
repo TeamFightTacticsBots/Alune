@@ -2,7 +2,10 @@
 Module for image recognition on the screen.
 """
 
+import contextlib
 from dataclasses import dataclass
+import os
+import sys
 
 import cv2
 from cv2.typing import MatLike
@@ -14,6 +17,48 @@ from numpy import ndarray
 from alune.images import BoundingBox
 from alune.images import Coordinate
 from alune.images import ImageButton
+
+# libpng warnings that are safe to ignore (cosmetic metadata issues, not actual image problems)
+_IGNORABLE_STDERR_PATTERNS = [
+    "libpng warning:",
+]
+
+
+@contextlib.contextmanager
+def _filter_stderr():
+    """Capture stderr during cv2.imread and filter out known harmless warnings, logging the rest."""
+    try:
+        stderr_fd = sys.stderr.fileno()
+    except (OSError, ValueError):
+        # No real file descriptor (e.g., some IDEs), just proceed without filtering
+        yield
+        return
+
+    # Create a pipe to capture stderr
+    read_fd, write_fd = os.pipe()
+    original_stderr_fd = os.dup(stderr_fd)
+
+    try:
+        sys.stderr.flush()
+        os.dup2(write_fd, stderr_fd)
+        yield
+    finally:
+        sys.stderr.flush()
+        os.dup2(original_stderr_fd, stderr_fd)
+        os.close(original_stderr_fd)
+        os.close(write_fd)
+
+        # Read captured output
+        with os.fdopen(read_fd, "r", errors="replace") as captured:
+            for line in captured:
+                line = line.strip()
+                if not line:
+                    continue
+                # Check if this is a known ignorable warning
+                if any(pattern in line for pattern in _IGNORABLE_STDERR_PATTERNS):
+                    continue
+                # Log unexpected stderr output so we don't miss real issues
+                logger.warning(f"Unexpected stderr during image load: {line}")
 
 
 @dataclass
@@ -61,7 +106,8 @@ def get_image_from_path(path: str) -> MatLike | None:
     Returns:
         The image or none if it does not exist.
     """
-    image_to_find = cv2.imread(path, 0)
+    with _filter_stderr():
+        image_to_find = cv2.imread(path, 0)
 
     if image_to_find is None:
         logger.warning(f"The image {path} does not exist on the system, or we do not have permission to read it.")
