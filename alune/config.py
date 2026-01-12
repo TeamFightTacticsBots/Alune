@@ -158,6 +158,15 @@ class AluneConfig:
             A list of traits we look for.
         """
         return self._config["traits"]
+    
+    def get_healthbars(self) -> list[images.HealthBarState]:
+        """
+        Get the list of health bars.
+
+        Returns:
+            A list of health bars
+        """
+        return self._config.get("healthbars", images.HealthBarState.get_default_healthbars())
 
     def should_surrender(self) -> bool:
         """

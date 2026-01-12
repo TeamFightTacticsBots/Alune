@@ -285,6 +285,20 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
         await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
 
+    async def drag_and_drop(self, source_box: BoundingBox, target_box: BoundingBox):
+        """
+        Drag from a random point inside `source_box` to a random point inside `target_box`.
+
+        Args:
+            source_box: Bounding box to start the drag from.
+            target_box: Bounding box to end the drag at.
+        """
+        start = source_box.get_random_point(self._random)
+        end = target_box.get_random_point(self._random)
+        duration = self._random.randint(400, 600)
+
+        await self._wrap_shell_call(f"input swipe {start.x} {start.y} {end.x} {end.y} {duration}")
+
     async def is_tft_installed(self) -> bool:
         """
         Check if TFT is installed on the device using the package manager (pm).

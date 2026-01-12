@@ -20,6 +20,10 @@ traits:
   - yordle
   - arcanist
 
+# The health bars the bot should track to find champions on the board.
+health_bars:
+  - health
+
 # Determines whether the bot should surrender as soon as possible (after round 3-1)
 # Valid values : true, false
 # Default value : false

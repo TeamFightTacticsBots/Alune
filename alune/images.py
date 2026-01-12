@@ -199,6 +199,27 @@ class Trait(StrEnum):
     YORDLE = auto()
     ZAUN = auto()
 
+class HealthBarState(StrEnum):
+    """
+    An enum representing the health bar states we can detect.
+    """
+
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
+        return helpers.get_resource_path(f"alune/images/health_bars/{name.lower()}.png")
+    
+    @classmethod
+    def get_default_healthbars(cls):
+        """
+        Gets a list of default health bars the bot should use.
+
+        Returns:
+            A list of the health bars to be used by default, if the user misconfigures.
+        """
+        return [cls.Health]
+
+    Health = auto()
 
 class ClickButton:  # pylint: disable=too-few-public-methods
     """
