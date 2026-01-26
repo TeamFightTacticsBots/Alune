@@ -24,6 +24,7 @@ dependencies = [
     "keyboard==0.13.5",
     "imutils==0.5.4",
     "av==14.0.0",
+    "onnxruntime==1.23.2",
 ]
 
 [project.optional-dependencies]

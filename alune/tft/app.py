@@ -144,7 +144,7 @@ class TFTApp:
                         break
 
                     await self.game.take_game_decision()
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(2)
                     screenshot = await self.adb.get_screen()
 
                     game_state = await self.get_app_state(screenshot)
@@ -156,6 +156,7 @@ class TFTApp:
                 await asyncio.sleep(10)
             case GameState.POST_GAME:
                 logger.info("App state is post game, clicking 'Play again'.")
+                self.game.reset_planning()
                 await self.adb.click_button(Button.play)
 
     # pylint: disable-next=too-many-return-statements
@@ -197,7 +198,9 @@ class TFTApp:
         ):
             return GameStateImageResult(GameState.IN_QUEUE)
 
-        if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
+        if screen.get_button_on_screen(screenshot, Button.composition) or screen.get_button_on_screen(
+            screenshot, Button.items
+        ):
             return GameStateImageResult(GameState.IN_GAME)
 
         if screen.get_on_screen(screenshot, Image.FIRST_PLACE) and screen.get_on_screen(screenshot, Image.BACK):

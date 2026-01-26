@@ -130,14 +130,13 @@ class Image(StrEnum):
         """
         return helpers.get_resource_path(f"alune/images/{name.lower()}.png")
 
+    CHAMPION = auto()
     RITO_LOGO = auto()
     CANCEL_QUEUE = auto()
     INVITE_FRIENDS = auto()
     INVITE_FRIENDS_DISABLED = auto()
     TEAM_PLANNER = auto()
     ACCEPTED = auto()
-    COMPOSITION = auto()
-    ITEMS = auto()
     FIRST_PLACE = auto()
     BACK = auto()
     SETTINGS = auto()
@@ -146,6 +145,60 @@ class Image(StrEnum):
     COLLAPSE_TOP_BAR = auto()
     PHASE_3_2_FULL = auto()
     NORMAL_GAME = auto()
+    FIELD = auto()
+    FAVORITE = auto()
+
+
+class Champion(StrEnum):
+    """
+    The same as ImageEnum, but images are intentionally in a different place and will
+    change with each set.
+    """
+
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
+        return helpers.get_resource_path(f"alune/images/champions/{name.lower()}.png")
+
+    UNKNOWN = auto()
+
+    KENNEN = auto()
+    KOBUKO_YUUMI = auto()
+    LULU = auto()
+    POPPY = auto()
+    RUMBLE = auto()
+    SWAIN = auto()
+    TEEMO = auto()
+    TRISTANA = auto()
+    ZIGGS = auto()
+    FIZZ = auto()
+
+
+class Item(StrEnum):
+    """
+    The same as ImageEnum, but images are intentionally in a different place and will maybee
+    change with each set.
+    """
+
+    # noinspection PyMethodParameters
+    # pylint: disable-next=no-self-argument,redefined-outer-name
+    def _generate_next_value_(name, start, count, last_values):
+        return helpers.get_resource_path(f"alune/images/items/{name.lower()}.png")
+
+    UNKNOWN = auto()
+
+    MAGNETIC_REMOVER = auto()
+    REFORGER = auto()
+    LESSER_CHAMPION_DUPLICATOR = auto()
+
+    BF_SWORD = auto()
+    CHAIN_VEST = auto()
+    GIANTS_BELT = auto()
+    NEEDLESSLY_LARGE_ROD = auto()
+    NEGATRON_CLOAK = auto()
+    RECURVE_BOW = auto()
+    SPARRING_GLOVES = auto()
+    TEAR_OF_THE_GODDESS = auto()
 
 
 class Trait(StrEnum):
@@ -167,7 +220,7 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.YORDLE, cls.ARCANIST]
+        return [cls.YORDLE]
 
     ARCANIST = auto()
     BILGEWATER = auto()
@@ -280,6 +333,18 @@ class Button:
         click_box=BoundingBox(1155, 595, 1242, 682),
         capture_area=BoundingBox(1128, 568, 1269, 709),
     )
+    store_lock = ImageButton(
+        click_box=BoundingBox(1220, 321, 1256, 354),
+        capture_area=BoundingBox(1220, 321, 1256, 354),
+    )
+    items = ImageButton(
+        click_box=BoundingBox(53, 14, 102, 72),
+        capture_area=BoundingBox(53, 14, 102, 72),
+    )
+    composition = ImageButton(
+        click_box=BoundingBox(53, 14, 102, 72),
+        capture_area=BoundingBox(53, 14, 102, 72),
+    )
 
     # Buttons without an image.
     store_card_one = ClickButton(BoundingBox(180, 47, 363, 272))
@@ -287,6 +352,9 @@ class Button:
     store_card_three = ClickButton(BoundingBox(624, 47, 807, 272))
     store_card_four = ClickButton(BoundingBox(845, 47, 1028, 272))
     store_card_five = ClickButton(BoundingBox(1067, 47, 1250, 272))
+    store_card = ClickButton(BoundingBox(1146, 613, 1242, 676))
+    reroll = ClickButton(BoundingBox(1160, 440, 1270, 520))
+    sell = ClickButton(BoundingBox(1190, 630, 1260, 700))
     augment_one = ClickButton(BoundingBox(170, 120, 424, 520))
     augment_two = ClickButton(BoundingBox(516, 120, 770, 520))
     augment_three = ClickButton(BoundingBox(863, 120, 1117, 520))

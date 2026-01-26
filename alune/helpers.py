@@ -6,7 +6,10 @@ from pathlib import Path
 import sys
 from time import sleep
 
+import cv2
 from loguru import logger
+import numpy
+from numpy import ndarray
 
 
 def get_application_path(relative_path: str | None = None) -> str:
@@ -105,3 +108,71 @@ def raise_and_exit(error: str, exit_code: int = 1) -> None:
     logger.warning("Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs.")
     sleep(10)
     sys.exit(exit_code)
+
+
+def get_line_center_points_based_on_edges(x_left: int, x_right: int, y: int, count: int):
+    """
+    Creates 'count' evenly spaced centers from left to right (inclusive endpoints).
+    For TFT: endpoints are centers of first and last cell in that row.
+    """
+    if count < 2:
+        return [(x_left, y)]
+
+    step = (x_right - x_left) / (count - 1)
+    return [(int(round(x_left + i * step)), y) for i in range(count)]
+
+
+def get_row_center_points_based_on_edges(x: int, y_top: int, y_bottom: int, count: int):
+    """
+    Creates 'count' evenly spaced centers from top to bottom (inclusive endpoints).
+    For TFT: endpoints are centers of first and last cell in that row.
+    """
+    if count < 2:
+        return [(x, y_top)]
+
+    step = (y_bottom - y_top) / (count - 1)
+    return [(x, int(round(y_top + i * step))) for i in range(count)]
+
+
+def _clamp(val: int, lo: int, hi: int) -> int:
+    return max(lo, min(hi, val))
+
+
+def get_roi_from_coordinate(img: ndarray, cx: int, cy: int, half: int):
+    """
+    Gets a square ROI from the given center coordinate.
+    """
+    h, w = img.shape[:2]
+    x0 = _clamp(cx - half, 0, w - 1)
+    x1 = _clamp(cx + half, 0, w)
+    y0 = _clamp(cy - half, 0, h - 1)
+    y1 = _clamp(cy + half, 0, h)
+    return img[y0:y1, x0:x1]
+
+
+def get_presence_score(now_roi: ndarray, empty_roi: ndarray):
+    """
+    Gets a presence score between two ROIs.
+    """
+    now_blur = cv2.GaussianBlur(now_roi, (3, 3), 0)
+    empty_blur = cv2.GaussianBlur(empty_roi, (3, 3), 0)
+
+    diff = cv2.absdiff(now_blur, empty_blur)
+    return float(numpy.mean(diff))
+
+
+def get_printable_champion_version(bench, field):
+    """
+    Converts the given bench and field champion objects into their printable names.
+    """
+    return (
+        [champ.name if champ else None for champ in bench],
+        [[champ.name if champ else None for champ in row] for row in field],
+    )
+
+
+def get_printable_item_version(items):
+    """
+    Converts the given item objects into their printable names.
+    """
+    return ([item.name if item else None for item in items],)
