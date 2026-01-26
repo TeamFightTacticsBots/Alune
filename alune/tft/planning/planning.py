@@ -18,9 +18,12 @@ from alune.images import Button
 from alune.images import Champion
 from alune.images import Image
 from alune.images import Item
+from alune.tft.planning.economy import TFTEconomy
+from alune.tft.planning.items import TFTItems
+from alune.tft.planning.placing import TFTPlacing
 
 
-class TFTPlanning:
+class TFTPlanning:  # pylint: disable=too-many-instance-attributes
     """
     Class to hold variables and methods relating to handling the TFT planning phase.
     """
@@ -31,11 +34,12 @@ class TFTPlanning:
 
         self.random = Random()
 
-        self._xp_cost = 4
-        self._reroll_cost = 2
+        self.xp_cost = 4
+        self.reroll_cost = 2
+        self.low_level = 3
 
-        self._champion_identifying_box = BoundingBox(1200, 0, 1279, 30)
-        self._is_champion_box = BoundingBox(1200, 300, 1269, 334)
+        self.champion_identifying_box = BoundingBox(1200, 0, 1279, 30)
+        self.is_champion_box = BoundingBox(1200, 300, 1269, 334)
         self._empty_compare_field = cv2.imread(str(Image.FIELD), cv2.IMREAD_GRAYSCALE)
 
         self._champion_detection_roi_half_size = 8  # ROI is (2*half) x (2*half) => 16x16
@@ -48,9 +52,9 @@ class TFTPlanning:
             (335, 945, 475),
             (375, 1010, 545),
         ]
-        self._field_coordinates: list[list[tuple[int, int]]] = []
+        self.field_coordinates: list[list[tuple[int, int]]] = []
         for row in self._field_rows:
-            self._field_coordinates.append(
+            self.field_coordinates.append(
                 helpers.get_line_center_points_based_on_edges(
                     row[0],
                     row[1],
@@ -60,14 +64,14 @@ class TFTPlanning:
             )
 
         self._last_field: list[list[Champion | None]] = []
-        for rows in self._field_coordinates:
+        for rows in self.field_coordinates:
             row: list[bool] = []
             for _ in rows:
                 row.append(None)
             self._last_field.append(row)
 
         self._bench_row = (245, 1030, 645)
-        self._bench_coordinates = helpers.get_line_center_points_based_on_edges(
+        self.bench_coordinates = helpers.get_line_center_points_based_on_edges(
             self._bench_row[0],
             self._bench_row[1],
             self._bench_row[2] + self._champion_detection_height_offset,
@@ -78,9 +82,9 @@ class TFTPlanning:
             (50, 134, 443),
             (132, 134, 443),
         ]
-        self._item_coordinates: list[list[tuple[int, int]]] = []
+        self.item_coordinates: list[list[tuple[int, int]]] = []
         for row in self._item_rows:
-            self._item_coordinates.append(
+            self.item_coordinates.append(
                 helpers.get_row_center_points_based_on_edges(
                     row[0],
                     row[1],
@@ -89,17 +93,17 @@ class TFTPlanning:
                 )
             )
 
-        self._configured_field: list[list[Champion | None]] = [
+        self.configured_field: list[list[Champion | None]] = [
             [None, None, Champion.KOBUKO_YUUMI, Champion.RUMBLE, Champion.KENNEN, Champion.POPPY, None],
             [None, Champion.FIZZ, None, None, None, None, None],
             [None, None, None, None, None, None, None],
             [Champion.TEEMO, None, Champion.ZIGGS, None, Champion.LULU, None, Champion.TRISTANA],
         ]
 
-        self._crafted_items: list[tuple[Champion, tuple[Item, Item]]] = (
+        self.crafted_items: list[tuple[Champion, tuple[Item, Item]]] = (
             []
         )  # needed to track crafted items this game (resets each game)
-        self._configured_items: list[tuple[Champion, tuple[Item, Item]]] = [
+        self.configured_items: list[tuple[Champion, tuple[Item, Item]]] = [
             (Champion.TEEMO, (Item.NEEDLESSLY_LARGE_ROD, Item.GIANTS_BELT)),
             (Champion.TEEMO, (Item.TEAR_OF_THE_GODDESS, Item.NEGATRON_CLOAK)),
             (Champion.TEEMO, (Item.TEAR_OF_THE_GODDESS, Item.RECURVE_BOW)),
@@ -108,7 +112,7 @@ class TFTPlanning:
             (Champion.KENNEN, (Item.CHAIN_VEST, Item.CHAIN_VEST)),
         ]
 
-        self._item_usage: dict[Item, bool] = {
+        self.item_usage: dict[Item, bool] = {
             # frontline first
             Item.GIANTS_BELT: True,
             Item.NEGATRON_CLOAK: True,
@@ -122,7 +126,7 @@ class TFTPlanning:
         }
 
         # level: (min_gold_to_keep, buy_xp, xp_spend_ratio, reroll_buffer)
-        self._configured_economy: dict[int, tuple[int, bool, float, int]] = {
+        self.configured_economy: dict[int, tuple[int, bool, float, int]] = {
             1: (0, False, 0.0, 0),
             2: (0, False, 0.0, 1),
             3: (0, True, 1, 2),
@@ -135,18 +139,10 @@ class TFTPlanning:
             10: (0, False, 0.0, 0),
         }
 
-        self._default_position: BoundingBox = BoundingBox(170, 490, 200, 540)
-
-        from alune.tft.planning.economy import TFTEconomy
+        self.default_position: BoundingBox = BoundingBox(170, 490, 200, 540)
 
         self.economy = TFTEconomy(adb_instance, alune_config, self)
-
-        from alune.tft.planning.placing import TFTPlacing
-
         self.placing = TFTPlacing(adb_instance, alune_config, self)
-
-        from alune.tft.planning.items import TFTItems
-
         self.items = TFTItems(adb_instance, alune_config, self)
 
     async def planning_phase(self):
@@ -172,18 +168,12 @@ class TFTPlanning:
 
         await self.economy.rerolling()
 
-    def reset_planning(self):
-        """
-        Resets the planning state for a new game.
-        """
-        self._crafted_items = []
-
     async def move_to_default_positions(self):
         """
         Move to the default position to have a good view of the board and bench.
         """
-        await self.adb.click_bounding_box(self._default_position)
-        await self.adb.click_bounding_box(self._default_position)
+        await self.adb.click_bounding_box(self.default_position)
+        await self.adb.click_bounding_box(self.default_position)
 
     def _scan_for_champions(self, screenshot: ndarray):
         empty = self._empty_compare_field
@@ -191,7 +181,7 @@ class TFTPlanning:
         threshold = self._champion_presence_threshold
 
         field: list[list[bool]] = []
-        for rows in self._field_coordinates:
+        for rows in self.field_coordinates:
             row: list[bool] = []
             for cx, cy in rows:
                 now_roi = helpers.get_roi_from_coordinate(screenshot, cx, cy, half)
@@ -202,7 +192,7 @@ class TFTPlanning:
             field.append(row)
 
         bench: list[bool] = []
-        for cx, cy in self._bench_coordinates:
+        for cx, cy in self.bench_coordinates:
             now_roi = helpers.get_roi_from_coordinate(screenshot, cx, cy, half)
             empty_roi = helpers.get_roi_from_coordinate(empty, cx, cy, half)
             score = helpers.get_presence_score(now_roi, empty_roi)
@@ -218,7 +208,7 @@ class TFTPlanning:
         await self.adb.click(x, y)
 
         screenshot = await self.adb.get_screen()
-        is_champion = screen.get_on_screen(screenshot, Image.CHAMPION, self._is_champion_box, precision=0.9)
+        is_champion = screen.get_on_screen(screenshot, Image.CHAMPION, self.is_champion_box, precision=0.9)
 
         champion_result: Champion | None = None
 
@@ -230,7 +220,7 @@ class TFTPlanning:
                     continue
 
                 champion_found = screen.get_on_screen(
-                    screenshot, champion, self._champion_identifying_box, precision=0.9
+                    screenshot, champion, self.champion_identifying_box, precision=0.9
                 )
                 if champion_found:
                     logger.debug(f"Champion is: {champion.name}")
@@ -243,14 +233,10 @@ class TFTPlanning:
         else:
             logger.debug("No champion")
             if is_bench:
+                logger.debug("Selling Item Anvil on bench")
                 await self.placing.sell_champion_at_coordinates(x, y)
                 await asyncio.sleep(0.2)
-                screenshot = await self.adb.get_screen()
-                is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one, precision=0.9)
-                if is_choose_one_active:
-                    logger.debug("Choosing from an item or a choice offer")
-                    await self.adb.click_button(Button.choose_one)
-                    await asyncio.sleep(0.1)
+                await helpers.choose_one_if_visible(self.adb, screen, Button)
 
         await self.adb.click(x, y)
         return champion_result
@@ -265,19 +251,19 @@ class TFTPlanning:
         Champion.UNKNOWN means Champ detected but not recognized.
         `None` means empty.
         """
-        bench_result: list[Champion | None] = [None] * len(self._bench_coordinates)
+        bench_result: list[Champion | None] = [None] * len(self.bench_coordinates)
         field_result: list[list[Champion | None]] = [
-            [None for _ in range(len(self._field_coordinates[0]))] for _ in range(len(self._field_coordinates))
+            [None for _ in range(len(self.field_coordinates[0]))] for _ in range(len(self.field_coordinates))
         ]
 
         for i, is_possibly_a_champion in enumerate(bench_mask):
             if not is_possibly_a_champion:
                 continue
 
-            cx, cy = self._bench_coordinates[i]
+            cx, cy = self.bench_coordinates[i]
             bench_result[i] = await self._check_for_champion_at_position(cx, cy, True)
 
-        for r, row in enumerate(self._field_coordinates):
+        for r, row in enumerate(self.field_coordinates):
             for c, (cx, cy) in enumerate(row):
                 if not field_mask[r][c]:
                     continue

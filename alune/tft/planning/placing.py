@@ -3,7 +3,7 @@ Module to handle all TFT placing related interactions.
 """
 
 import asyncio
-from random import Random
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
@@ -12,7 +12,9 @@ from alune.config import AluneConfig
 from alune.images import BoundingBox
 from alune.images import Button
 from alune.images import Champion
-from alune.tft.planning.planning import TFTPlanning
+
+if TYPE_CHECKING:
+    from alune.tft.planning.planning import TFTPlanning
 
 
 class TFTPlacing:
@@ -20,18 +22,10 @@ class TFTPlacing:
     Class to hold variables and methods relating to handling the TFT placing.
     """
 
-    def __init__(self, adb_instance: ADB, alune_config: AluneConfig, planning_instance: TFTPlanning):
+    def __init__(self, adb_instance: ADB, alune_config: AluneConfig, planning_instance: "TFTPlanning"):
         self.adb = adb_instance
         self.config = alune_config
         self.planning = planning_instance
-
-        self.random = Random()
-
-        self._bench_coordinates = self.planning._bench_coordinates
-        self._field_coordinates = self.planning._field_coordinates
-
-        self._configured_field = self.planning._configured_field
-
         self._drag_duration_ms = 400
 
     async def handle_placing(self, bench: list[Champion | None], field: list[list[Champion | None]]):
@@ -45,7 +39,7 @@ class TFTPlacing:
         # TODO later when all Champs are defined treat UNKNOWN properly
         if champion is Champion.UNKNOWN:
             return False
-        for row in self._configured_field:
+        for row in self.planning.configured_field:
             if champion in row:
                 return True
         return False
@@ -74,7 +68,7 @@ class TFTPlacing:
         for i, champ in enumerate(bench):
             if champ is not None and self._is_configured_champion(champ) is False:
                 logger.debug(f"Selling unwanted from bench[{i}].")
-                x, y = self._bench_coordinates[i]
+                x, y = self.planning.bench_coordinates[i]
                 await self.sell_champion_at_coordinates(x, y)
                 bench[i] = None
                 sell_unknowns -= 1
@@ -88,7 +82,7 @@ class TFTPlacing:
             for c, champ in enumerate(row):
                 if champ is not None and self._is_configured_champion(champ) is False:
                     logger.debug(f"Selling unwanted from field[{r}][{c}].")
-                    x, y = self._field_coordinates[r][c]
+                    x, y = self.planning.field_coordinates[r][c]
                     await self.sell_champion_at_coordinates(x, y)
                     field[r][c] = None
                     sell_unknowns -= 1
@@ -100,7 +94,7 @@ class TFTPlacing:
 
     def _get_configured_lookup(self):
         desired_pos: dict[Champion, tuple[int, int]] = {}
-        for r, row in enumerate(self._configured_field):
+        for r, row in enumerate(self.planning.configured_field):
             for c, configured_champ in enumerate(row):
                 if configured_champ is None:
                     continue
@@ -119,7 +113,7 @@ class TFTPlacing:
     async def _place_on_last_free_bench_slot(self, champion: Champion, x: int, y: int, bench: list[Champion | None]):
         for i in range(len(bench) - 1, -1, -1):
             if bench[i] is None:
-                bx, by = self._bench_coordinates[i]
+                bx, by = self.planning.bench_coordinates[i]
                 await self._place_from_coordinate_to_coordinate(x, y, bx, by)
                 bench[i] = champion
                 return True
@@ -138,7 +132,7 @@ class TFTPlacing:
                 if champion is None:
                     continue
 
-                ox, oy = self._field_coordinates[r][c]
+                ox, oy = self.planning.field_coordinates[r][c]
 
                 if champion not in configured_lookup:
                     if await self._place_on_last_free_bench_slot(champion, ox, oy, bench):
@@ -148,7 +142,7 @@ class TFTPlacing:
 
                 # Champion is in configuration
                 target_r, target_c = configured_lookup[champion]
-                tx, ty = self._field_coordinates[target_r][target_c]
+                tx, ty = self.planning.field_coordinates[target_r][target_c]
 
                 if field[target_r][target_c] is None:
                     await self._place_from_coordinate_to_coordinate(ox, oy, tx, ty)
@@ -190,8 +184,8 @@ class TFTPlacing:
             if bi is None:
                 continue
 
-            bx, by = self._bench_coordinates[bi]
-            tx, ty = self._field_coordinates[r][c]
+            bx, by = self.planning.bench_coordinates[bi]
+            tx, ty = self.planning.field_coordinates[r][c]
 
             if field[r][c] is None and benched_count > 0:
                 await self._place_from_coordinate_to_coordinate(bx, by, tx, ty)
@@ -230,8 +224,8 @@ class TFTPlacing:
 
             bi, champ = best_champ
             used_best_champions.append(champ)
-            bx, by = self._bench_coordinates[bi]
-            tx, ty = self._bench_coordinates[bc]
+            bx, by = self.planning.bench_coordinates[bi]
+            tx, ty = self.planning.bench_coordinates[bc]
             await self._place_from_coordinate_to_coordinate(bx, by, tx, ty)
             bench[bi] = bench[bc]
             bench[bc] = champ

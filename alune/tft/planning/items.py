@@ -5,7 +5,9 @@ Module to handle all TFT item related interactions.
 import asyncio
 from collections import Counter
 import math
-from random import Random
+from random import choice
+from random import uniform
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
@@ -18,7 +20,9 @@ from alune.images import Button
 from alune.images import Champion
 from alune.images import Image
 from alune.images import Item
-from alune.tft.planning.planning import TFTPlanning
+
+if TYPE_CHECKING:
+    from alune.tft.planning.planning import TFTPlanning
 
 
 class TFTItems:
@@ -26,26 +30,10 @@ class TFTItems:
     Class to hold variables and methods relating to handling the TFT items.
     """
 
-    def __init__(self, adb_instance: ADB, alune_config: AluneConfig, planning_instance: TFTPlanning):
+    def __init__(self, adb_instance: ADB, alune_config: AluneConfig, planning_instance: "TFTPlanning"):
         self.adb = adb_instance
         self.config = alune_config
         self.planning = planning_instance
-
-        self.random = Random()
-
-        self._champion_identifying_box = self.planning._champion_identifying_box
-        self._is_champion_box = self.planning._is_champion_box
-
-        self._field_coordinates = self.planning._field_coordinates
-        self._item_coordinates = self.planning._item_coordinates
-        self._configured_field = self.planning._configured_field
-        self._configured_items = self.planning._configured_items
-
-        self._configured_item_champions = {champ for champ, _ in self._configured_items}
-
-        self._item_usage = self.planning._item_usage
-
-        self._default_position = self.planning._default_position
 
         self._drag_duration_ms = 400
         self._wait_after_drag_ms = 300
@@ -58,7 +46,7 @@ class TFTItems:
         await self.place_configured_items(field)
         await self.collect_dropped_items()
 
-    async def _get_all_items(self):
+    async def _get_all_items(self):  # pylint: disable=too-many-locals
         await asyncio.sleep(0.2)
         screenshot = await self.adb.get_screen()
         is_items = screen.get_button_on_screen(screenshot, Button.items, 0.9)
@@ -68,7 +56,7 @@ class TFTItems:
             screenshot = await self.adb.get_screen()
 
         items: list[Item] = []
-        for rows in self._item_coordinates:
+        for rows in self.planning.item_coordinates:
             for coordinate in rows:
                 cx, cy = coordinate
                 item_box = BoundingBox(cx - 37, cy - 37, cx + 37, cy + 37)
@@ -83,7 +71,8 @@ class TFTItems:
                         break
                 items.append(found_item)
 
-        # TODO: because detection of item / no item is not perfect, we clean up trailing UNKNOWNs and only keep self._keep_unknown_items_count amount
+        # TODO: detection of item/no-item is imperfect.
+        # Cleanup trailing UNKNOWNs and only keep a limited amount.
         last_real_idx = None
         for i, it in enumerate(items):
             if it is not Item.UNKNOWN:
@@ -100,7 +89,7 @@ class TFTItems:
         return items
 
     def _check_champion_configured_position(self, champion: Champion, field: list[list[Champion | None]]):
-        for r, row in enumerate(self._configured_field):
+        for r, row in enumerate(self.planning.configured_field):
             for c, configured_champ in enumerate(row):
                 if configured_champ == champion and field[r][c] == champion:
                     return r, c
@@ -116,7 +105,7 @@ class TFTItems:
         await self.adb.click(x, y)
         await asyncio.sleep(0.1)
         screenshot = await self.adb.get_screen()
-        is_champion = screen.get_on_screen(screenshot, Image.CHAMPION, self._is_champion_box, precision=0.9)
+        is_champion = screen.get_on_screen(screenshot, Image.CHAMPION, self.planning.is_champion_box, precision=0.9)
 
         if expected_champion is None and is_champion:
             await self.adb.click(x, y)
@@ -125,7 +114,7 @@ class TFTItems:
 
         if is_champion:
             champion_found = screen.get_on_screen(
-                screenshot, expected_champion, self._champion_identifying_box, precision=0.9
+                screenshot, expected_champion, self.planning.champion_identifying_box, precision=0.9
             )
             if champion_found:
                 await self.adb.click(x, y)
@@ -136,13 +125,13 @@ class TFTItems:
         await asyncio.sleep(0.05)
         return False
 
-    async def _place_configured_items_on_champions_and_reserve(
+    async def _place_configured_items_on_champions_and_reserve(  # pylint: disable=too-many-locals
         self, items: list[Item], field: list[list[Champion | None]]
     ):
         item_counter = Counter(item for item in items)
 
         left_configurations = [
-            config for config in self._configured_items if config not in self.planning._crafted_items
+            config for config in self.planning.configured_items if config not in self.planning.crafted_items
         ]
 
         for config in left_configurations:
@@ -173,13 +162,13 @@ class TFTItems:
             if first_item_index is None or second_item_index is None:
                 continue
 
-            i1x, i1y = self._item_coordinates[first_item_index // 5][first_item_index % 5]
-            i2x, i2y = self._item_coordinates[second_item_index // 5][second_item_index % 5]
+            i1x, i1y = self.planning.item_coordinates[first_item_index // 5][first_item_index % 5]
+            i2x, i2y = self.planning.item_coordinates[second_item_index // 5][second_item_index % 5]
 
             item_1 = BoundingBox(i1x - 2, i1y - 2, i1x + 2, i1y + 2)
             item_2 = BoundingBox(i2x - 2, i2y - 2, i2x + 2, i2y + 2)
 
-            cx, cy = self._field_coordinates[found_champion[0]][found_champion[1]]
+            cx, cy = self.planning.field_coordinates[found_champion[0]][found_champion[1]]
 
             is_present = await self._ensure_champion_is_on_field(champion, cx, cy)
             if not is_present:
@@ -189,7 +178,7 @@ class TFTItems:
             for idx in sorted((first_item_index, second_item_index), reverse=True):
                 items.pop(idx)
 
-            self.planning._crafted_items.append(config)
+            self.planning.crafted_items.append(config)
 
             drag1 = item_2 if first_item_index < second_item_index else item_1
             drag2 = item_1 if drag1 is item_2 else item_2
@@ -203,16 +192,17 @@ class TFTItems:
 
         return item_counter, items
 
-    async def _place_leftover_items_on_random_champions(
+    async def _place_leftover_items_on_random_champions(  # pylint: disable=too-many-locals, too-many-branches
         self, item_counter: Counter[Item], items: list[Item], field: list[list[Champion | None]]
     ) -> None:
         possible_champions = []
-        for r, row in enumerate(self._configured_field):
+        configured_item_champions = {champ for champ, _ in self.planning.configured_items}
+        for r, row in enumerate(self.planning.configured_field):
             for c, configured_champ in enumerate(row):
                 if (
                     configured_champ is not None
                     and configured_champ == field[r][c]
-                    and configured_champ not in self._configured_item_champions
+                    and configured_champ not in configured_item_champions
                 ):
                     possible_champions.append((r, c))
 
@@ -221,7 +211,7 @@ class TFTItems:
         if not possible_champions:
             return
 
-        row_count = len(self._configured_field)
+        row_count = len(self.planning.configured_field)
         split_row = row_count // 2
 
         front_candidates = [(r, c) for (r, c) in possible_champions if r < split_row]
@@ -234,7 +224,7 @@ class TFTItems:
             if item in (Item.REFORGER, Item.MAGNETIC_REMOVER):
                 continue
 
-            is_frontline_item = self._item_usage.get(item)
+            is_frontline_item = self.planning.item_usage.get(item)
 
             logger.debug(f"Placing leftover item {item} x{count}")
 
@@ -254,8 +244,8 @@ class TFTItems:
                 if not candidates:
                     break
 
-                chosen_r, chosen_c = self.random.choice(candidates)
-                cx, cy = self._field_coordinates[chosen_r][chosen_c]
+                chosen_r, chosen_c = choice(candidates)
+                cx, cy = self.planning.field_coordinates[chosen_r][chosen_c]
 
                 is_present = await self._ensure_champion_is_on_field(None, cx, cy)
                 if not is_present:
@@ -263,7 +253,7 @@ class TFTItems:
                     continue
 
                 items.pop(item_index)
-                ix, iy = self._item_coordinates[item_index // 5][item_index % 5]
+                ix, iy = self.planning.item_coordinates[item_index // 5][item_index % 5]
                 item_box = BoundingBox(
                     ix - 37,
                     iy - 37,
@@ -309,9 +299,9 @@ class TFTItems:
         total_len = top_len + right_len
 
         # Choose segment proportional to length
-        r = self.random.uniform(0, total_len)
+        r = uniform(0, total_len)
 
-        t = self.random.random()
+        t = uniform(0, 1)
         if r < top_len:
             return lerp(top_left, top_right, t)
         return lerp(top_right, bottom_right, t)
@@ -333,6 +323,6 @@ class TFTItems:
 
         edge_box = BoundingBox(ex - 2, ey - 2, ex + 2, ey + 2)
 
-        await self.adb.click_bounding_box(self._default_position)
+        await self.adb.click_bounding_box(self.planning.default_position)
         await asyncio.sleep(0.02)
         await self.adb.click_bounding_box(edge_box)

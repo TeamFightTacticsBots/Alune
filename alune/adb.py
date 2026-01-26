@@ -30,7 +30,7 @@ from alune.screen import ImageSearchResult
 
 # The amount of attributes is fine in my opinion.
 # We could split off screen recording into its own class, but I don't see the need to.
-class ADB:  # pylint: disable=too-many-instance-attributes
+class ADB:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """
     Class to hold the connection to an ADB connection via TCP.
     USB connection is possible, but not supported at the moment.

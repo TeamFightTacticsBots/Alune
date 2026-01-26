@@ -156,7 +156,7 @@ class TFTApp:
                 await asyncio.sleep(10)
             case GameState.POST_GAME:
                 logger.info("App state is post game, clicking 'Play again'.")
-                self.game.reset_planning()
+                self.game.reset_game_variables()
                 await self.adb.click_button(Button.play)
 
     # pylint: disable-next=too-many-return-statements

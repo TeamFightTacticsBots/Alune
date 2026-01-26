@@ -8,6 +8,7 @@ from random import Random
 from loguru import logger
 from numpy import ndarray
 
+from alune import helpers
 from alune import screen
 from alune.adb import ADB
 from alune.config import AluneConfig
@@ -58,18 +59,7 @@ class TFTGame:
             await self.select_augment()
             return
 
-        is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden, precision=0.9)
-        if is_choose_one_hidden:
-            logger.debug("Choose one is hidden, clicking it to show offers")
-            await self.adb.click_button(Button.choose_one_hidden)
-            await asyncio.sleep(2)
-            screenshot = await self.adb.get_screen()
-
-        is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one, precision=0.9)
-        if is_choose_one_active:
-            logger.debug("Choosing from an item or a choice offer")
-            await self.adb.click_button(Button.choose_one)
-            await asyncio.sleep(1)
+        if await helpers.choose_one_if_visible(self.adb, screen, Button):
             return
 
         is_shop_opened = screen.get_button_on_screen(screenshot, Button.store_lock, precision=0.9)
@@ -80,11 +70,11 @@ class TFTGame:
             logger.debug("Planning phase ended")
             return
 
-    def reset_planning(self):
+    def reset_game_variables(self):
         """
-        Resets the planning state for a new game.
+        Resets the game state for a new game.
         """
-        self.planning.reset_planning()
+        self.planning.crafted_items = []
 
     async def select_augment(self):
         """

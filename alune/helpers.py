@@ -2,14 +2,21 @@
 Collection of helper methods.
 """
 
+import asyncio
 from pathlib import Path
 import sys
 from time import sleep
+from typing import TYPE_CHECKING
 
 import cv2
 from loguru import logger
 import numpy
 from numpy import ndarray
+
+if TYPE_CHECKING:
+    from alune import screen
+    from alune.adb import ADB
+    from alune.images import Button
 
 
 def get_application_path(relative_path: str | None = None) -> str:
@@ -108,6 +115,32 @@ def raise_and_exit(error: str, exit_code: int = 1) -> None:
     logger.warning("Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs.")
     sleep(10)
     sys.exit(exit_code)
+
+
+async def choose_one_if_visible(adb: "ADB", screen: "screen", button: "Button") -> bool:
+    """
+    If a 'choose one' offer is visible, click through it.
+
+    Returns:
+        True if an offer was handled.
+    """
+    screenshot = await adb.get_screen()
+
+    is_choose_one_hidden = screen.get_button_on_screen(screenshot, button.choose_one_hidden, precision=0.9)
+    if is_choose_one_hidden:
+        logger.debug("Choose one is hidden, clicking it to show offers")
+        await adb.click_button(button.choose_one_hidden)
+        await asyncio.sleep(0.3)
+        screenshot = await adb.get_screen()
+
+    is_choose_one_active = screen.get_button_on_screen(screenshot, button.choose_one, precision=0.9)
+    if is_choose_one_active:
+        logger.debug("Choosing from an item or a choice offer")
+        await adb.click_button(button.choose_one)
+        await asyncio.sleep(0.1)
+        return True
+
+    return False
 
 
 def get_line_center_points_based_on_edges(x_left: int, x_right: int, y: int, count: int):
