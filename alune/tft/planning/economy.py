@@ -75,6 +75,9 @@ class TFTEconomy:
         is_low_level = level <= self.planning.low_level
         min_gold, _, _, reroll_buffer = self.planning.configured_economy.get(level, (0, False, 1, 0))
 
+        # Try re-buy desired units after bench was cleaned up
+        await self.buy_from_shop(is_low_level)
+        
         while await self._get_gold() - self.planning.reroll_cost - reroll_buffer >= min_gold:
             logger.debug("Rerolling shop within budget")
             await self._reroll_shop()
