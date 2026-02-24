@@ -46,6 +46,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._rsa_signer = None
         self._device = None
         self._config = config
+        self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
 
         if not config.should_use_screen_record():
@@ -61,7 +62,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Load the RSA signer and attempt to connect to a device via ADB TCP.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device(self._default_port)
+        await self._connect_to_device(self._default_host, self._default_port)
 
     async def _load_rsa_signer(self):
         """
@@ -131,12 +132,12 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         asyncio.create_task(self.__screen_record())
         atexit.register(self.mark_screen_record_for_close)
 
-    async def _connect_to_device(self, port: int, retry_with_scan: bool = True):
+    async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
         """
-        device = AdbDeviceTcpAsync(host="localhost", port=port, default_transport_timeout_s=9)
-        logger.info(f"Attempting to connect to ADB session with device localhost:{port}")
+        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
+        logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
@@ -145,14 +146,18 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         except OSError:
             self._device = None
 
-        logger.warning(f"Failed to connect to ADB session with device localhost:{port}.")
+        logger.warning(f"Failed to connect to ADB session with device {host}:{port}.")
         if not retry_with_scan:
             self._device = None
             return
 
-        open_adb_port = await self.scan_localhost_devices()
-        if open_adb_port:
-            await self._connect_to_device(open_adb_port, retry_with_scan=False)
+        if "localhost" in host:
+            open_adb_port = await self.scan_localhost_devices()
+            if open_adb_port:
+                await self._connect_to_device(host, open_adb_port, retry_with_scan=False)
+        else:
+            logger.info(f"Refusing to scan ports of remote device: {host} - only localhost is supported.")
+            self._device = None
 
     def is_connected(self) -> bool:
         """
