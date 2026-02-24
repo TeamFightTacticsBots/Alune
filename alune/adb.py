@@ -140,6 +140,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
         logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
+        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
+        logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
@@ -148,15 +150,19 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         except OSError:
             self._device = None
 
-        logger.warning(f"Failed to connect to ADB session with device localhost:{port}.")
+        logger.warning(f"Failed to connect to ADB session with device {host}:{port}.")
         if not retry_with_scan:
             self._device = None
             return
 
-        open_adb_port = await self.scan_localhost_devices()
-        if open_adb_port:
-            await self._connect_to_device(open_adb_port, retry_with_scan=False)
-            
+        if "localhost" in host:
+            open_adb_port = await self.scan_localhost_devices()
+            if open_adb_port:
+                await self._connect_to_device(host, open_adb_port, retry_with_scan=False)
+        else:
+            logger.info(f"Refusing to scan ports of remote device: {host} - only localhost is supported.")
+            self._device = None
+
     async def _connect_to_device_usb(self, serial: str | None = None):
         """
         Connect to the first available device via USB (or to a specific serial if provided).
@@ -173,6 +179,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
 
         logger.warning("Failed to connect to ADB session over USB.")
         self._device = None
+
 
     def is_connected(self) -> bool:
         """
