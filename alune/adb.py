@@ -26,6 +26,7 @@ from alune.images import ClickButton
 from alune.images import ImageButton
 from alune.screen import BoundingBox
 from alune.screen import ImageSearchResult
+from alune.adb_usb import AdbDeviceUsbAsyncShim
 
 
 # The amount of attributes is fine in my opinion.
@@ -62,7 +63,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Load the RSA signer and attempt to connect to a device via ADB TCP.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device(self._default_host, self._default_port)
+        # await self._connect_to_device(self._default_host, self._default_port)
+        await self._connect_to_device_usb()
 
     async def _load_rsa_signer(self):
         """
@@ -132,12 +134,12 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         asyncio.create_task(self.__screen_record())
         atexit.register(self.mark_screen_record_for_close)
 
-    async def _connect_to_device(self, device_ip: str, port: int, retry_with_scan: bool = True):
+    async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
         """
-        device = AdbDeviceTcpAsync(host=device_ip, port=port, default_transport_timeout_s=10)
-        logger.info(f"Attempting to connect to ADB session with device {device_ip}:{port}")
+        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
+        logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:
@@ -154,6 +156,23 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         open_adb_port = await self.scan_localhost_devices()
         if open_adb_port:
             await self._connect_to_device(open_adb_port, retry_with_scan=False)
+            
+    async def _connect_to_device_usb(self, serial: str | None = None):
+        """
+        Connect to the first available device via USB (or to a specific serial if provided).
+        """
+        device = AdbDeviceUsbAsyncShim(serial=serial, default_transport_timeout_s=10)
+        logger.info("Attempting to connect to ADB session over USB...")
+        try:
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
+            if connection:
+                self._device = device
+                return
+        except OSError:
+            self._device = None
+
+        logger.warning("Failed to connect to ADB session over USB.")
+        self._device = None
 
     def is_connected(self) -> bool:
         """
