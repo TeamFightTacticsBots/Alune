@@ -46,6 +46,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._rsa_signer = None
         self._device = None
         self._config = config
+        self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
 
         if not config.should_use_screen_record():
@@ -61,7 +62,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Load the RSA signer and attempt to connect to a device via ADB TCP.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device(self._default_port)
+        await self._connect_to_device(self._default_host, self._default_port)
 
     async def _load_rsa_signer(self):
         """
@@ -131,12 +132,12 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         asyncio.create_task(self.__screen_record())
         atexit.register(self.mark_screen_record_for_close)
 
-    async def _connect_to_device(self, port: int, retry_with_scan: bool = True):
+    async def _connect_to_device(self, device_ip: str, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
         """
-        device = AdbDeviceTcpAsync(host="localhost", port=port, default_transport_timeout_s=9)
-        logger.info(f"Attempting to connect to ADB session with device localhost:{port}")
+        device = AdbDeviceTcpAsync(host=device_ip, port=port, default_transport_timeout_s=10)
+        logger.info(f"Attempting to connect to ADB session with device {device_ip}:{port}")
         try:
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
             if connection:

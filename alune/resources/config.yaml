@@ -45,12 +45,16 @@ chances:
   buy_xp: 50
 
 
+# Override the default ADB host Alune tries to connect to.
+# This is helpful if you are running TFT on a real device. If you wish to use an emulator, leave it as is.
+adb_host: localhost
+
 # Override the default ADB port Alune tries to connect to.
-# If there is no device listening on this port, a scan will happen to find your device.
+# If there is no device listening on this port, a scan will happen to find your device (if adb_host is set to localhost)
 adb_port: 5555
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 12
+version: 13
 # Version of the TFT set.
 set: 16
