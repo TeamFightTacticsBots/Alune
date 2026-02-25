@@ -21,6 +21,9 @@ from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
 from alune.tft.app import TFTApp
 
+REQUIRED_SCREEN_SIZE = "1280x720"
+REQUIRED_SCREEN_DENSITY = "240"
+
 
 async def loop_disconnect_wrapper(adb_instance: ADB, alune_config: AluneConfig):
     """
@@ -54,17 +57,17 @@ async def check_phone_preconditions(adb_instance: ADB):
     """
     logger.debug("Checking screen size")
     size = await adb_instance.get_screen_size()
-    if size != "1280x720":
-        logger.info(f"Changing screen size from {size} to 1280x720.")
-        await adb_instance.set_screen_size()
+    if size != REQUIRED_SCREEN_SIZE:
+        logger.info(f"Changing screen size from {size} to {REQUIRED_SCREEN_SIZE}.")
+        await adb_instance.set_screen_size(REQUIRED_SCREEN_SIZE)
         size = await adb_instance.get_screen_size()
-        if size != "1280x720":
+        if size != REQUIRED_SCREEN_SIZE:
             raise_and_exit("Failed to change the screen size -- this may require manual intervention!")
 
     logger.debug("Checking screen density")
     density = await adb_instance.get_screen_density()
-    if density != "240":
-        logger.info(f"Changing dpi from {density} to 240.")
+    if density != REQUIRED_SCREEN_DENSITY:
+        logger.info(f"Changing dpi from {density} to {REQUIRED_SCREEN_DENSITY}.")
         await adb_instance.set_screen_density()
 
     logger.debug("Checking memory")
