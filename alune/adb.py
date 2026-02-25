@@ -6,12 +6,11 @@ import asyncio
 import atexit
 import os.path
 import random
-import asyncio
 import threading
-
 from typing import Any, AsyncIterator, Optional
-from adb_shell.adb_device import AdbDeviceUsb
+
 from adb_shell.adb_device import AdbDeviceTcp
+from adb_shell.adb_device import AdbDeviceUsb
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
@@ -34,7 +33,7 @@ from alune.screen import ImageSearchResult
 
 # The amount of attributes is fine in my opinion.
 # We could split off screen recording into its own class, but I don't see the need to.
-class ADB:  # pylint: disable=too-many-instance-attributes
+class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-public-methods
     """
     Class to hold the connection to an ADB connection via TCP or USB.
     """
@@ -65,12 +64,12 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Load the RSA signer and attempt to connect to a device via ADB.
         """
         await self._load_rsa_signer()
-        
+
         adb_config = self._config.get_adb_config()
         if adb_config.get("prefer_usb", False):
             await self._connect_to_device_usb(serial=adb_config.get("serial_port"))
             if self._device is None and adb_config.get("tcp_fallback", True):
-                await self._connect_to_device(self._default_host, self._default_port)    
+                await self._connect_to_device(self._default_host, self._default_port)
         else:
             await self._connect_to_device(self._default_host, self._default_port)
 
@@ -175,7 +174,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Connect to the first available device via USB, or to a specific serial if provided
         """
-        
+
         device = AdbDeviceUsbAsyncShim(serial=serial, default_transport_timeout_s=10)
         logger.info("Attempting to connect to ADB session over USB...")
         try:
@@ -188,7 +187,6 @@ class ADB:  # pylint: disable=too-many-instance-attributes
 
         logger.warning("Failed to connect to ADB session over USB.")
         self._device = None
-
 
     def is_connected(self) -> bool:
         """
@@ -230,19 +228,19 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Resets the screen size to default.
         """
         await self.set_screen_size("reset")
-        
+
     async def set_screen_density(self, density="240"):
         """
         Set the screen pixel density (defaults to 240).
         """
         await self._wrap_shell_call(f"wm density {density}")
-        
+
     async def reset_screen_density(self):
         """
         Resets the screen density to default.
         """
         await self.set_screen_density("reset")
-        
+
     async def get_memory(self) -> int:
         """
         Gets the memory of the device.
@@ -332,8 +330,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # input tap x y comes with the downtime of tapping too fast for the game sometimes,
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
         await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
-    
+
     async def get_current_user(self, default_user=0) -> int:
+        """
+        Retrieves the current user from adb
+        """
         shell_output = await self._wrap_shell_call("am get-current-user")
         user = default_user
         try:
@@ -484,23 +485,22 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._is_screen_recording = False
 
 
-class AdbDeviceUsbAsyncShim:
+class AdbDeviceUsbAsyncShim: # pylint: disable=missing-function-docstring
     """Async wrapper around adb_shell.adb_device.AdbDeviceUsb"""
 
-    def __init__(self, serial: Optional[str] = None, port_path: Any = None, default_transport_timeout_s: float | None = 10):
-        self._dev = AdbDeviceUsb(serial=serial, port_path=port_path, default_transport_timeout_s=default_transport_timeout_s)
+    def __init__(
+        self, serial: Optional[str] = None, port_path: Any = None, default_transport_timeout_s: float | None = 10
+    ):
+        self._dev = AdbDeviceUsb(
+            serial=serial, port_path=port_path, default_transport_timeout_s=default_transport_timeout_s
+        )
 
     @property
     def available(self) -> bool:
         return self._dev.available
 
     async def connect(
-        self,
-        rsa_keys=None,
-        transport_timeout_s=None,
-        auth_timeout_s: float = 10.0,
-        read_timeout_s: float = 10.0,
-        auth_callback=None,
+        self, rsa_keys=None, transport_timeout_s=None, auth_timeout_s: float = 10.0, read_timeout_s: float = 10.0
     ) -> bool:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -510,7 +510,7 @@ class AdbDeviceUsbAsyncShim:
                 transport_timeout_s=transport_timeout_s,
                 auth_timeout_s=auth_timeout_s,
                 read_timeout_s=read_timeout_s,
-                auth_callback=auth_callback,
+                auth_callback=None,
             ),
         )
 
@@ -546,7 +546,7 @@ class AdbDeviceUsbAsyncShim:
                 ):
                     asyncio.run_coroutine_threadsafe(q.put(item), loop).result()
                 asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result()
-            except Exception as e:  # propagate exceptions to async side
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 asyncio.run_coroutine_threadsafe(q.put(e), loop).result()
                 asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result()
 

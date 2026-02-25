@@ -104,7 +104,8 @@ async def reset_phone_preconditions(adb_instance: ADB):
     """
     await adb_instance.reset_screen_size()
     await adb_instance.reset_screen_density()
-    
+
+
 async def check_alune_version():
     """
     Checks the remote version against the local version and prints out a warning if remote is newer.
