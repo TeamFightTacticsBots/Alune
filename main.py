@@ -3,6 +3,7 @@ The main class for Alune, responsible for the main loop.
 """
 
 import asyncio
+import contextlib
 import importlib.metadata
 import json
 import os
@@ -120,6 +121,21 @@ async def check_alune_version():
     logger.info("You are running the latest version.")
 
 
+async def handle_exit(adb_instance: ADB):
+    """
+    Method that handles the exit logic. It stops the current ADB session as it may be poisoned
+    and then attempts to start a new session in order to reset the phone size and density.
+    Finally it closes this session as well.
+    """
+    await asyncio.shield(adb_instance.close())
+
+    logger.warning("Attempting to reset phone changes. If this fails on a real device, please restart it.")
+    with contextlib.suppress(Exception):
+        await adb_instance.load()
+        await adb_instance.reset_screen()
+        await adb_instance.close()
+
+
 async def main():
     """
     Main method, loads ADB connection, checks if the phone is ready to be used and
@@ -180,19 +196,14 @@ async def main():
     try:
         await loop_disconnect_wrapper(adb_instance, config)
     except (KeyboardInterrupt, asyncio.CancelledError):
+        await handle_exit(adb_instance)
         logger.info("Thanks for using Alune, see you next time!")
-        adb_instance.mark_screen_record_for_close()
-        await asyncio.sleep(1)
-        await adb_instance.reset_screen()
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(e)
         logger.warning(
             "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
         )
-        adb_instance.mark_screen_record_for_close()
-        await asyncio.sleep(1)
-        logger.warning("Attempting to reset phone changes. If this fails on a real device, please restart it.")
-        await adb_instance.reset_screen()
+        await handle_exit(adb_instance)
         await asyncio.sleep(10)
 
 
