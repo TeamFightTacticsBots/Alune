@@ -33,8 +33,7 @@ from alune.adb_usb import AdbDeviceUsbAsyncShim
 # We could split off screen recording into its own class, but I don't see the need to.
 class ADB:  # pylint: disable=too-many-instance-attributes
     """
-    Class to hold the connection to an ADB connection via TCP.
-    USB connection is possible, but not supported at the moment.
+    Class to hold the connection to an ADB connection via TCP or USB.
     """
 
     def __init__(self, config: AluneConfig):
@@ -46,7 +45,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._random = random.Random()
         self._rsa_signer = None
         self._device = None
-        self._config = config
+        self._config = config.get_adb_config()
         self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
 
@@ -60,15 +59,19 @@ class ADB:  # pylint: disable=too-many-instance-attributes
 
     async def load(self):
         """
-        Load the RSA signer and attempt to connect to a device via ADB TCP.
+        Load the RSA signer and attempt to connect to a device via ADB.
         """
         await self._load_rsa_signer()
-        # await self._connect_to_device(self._default_host, self._default_port)
-        await self._connect_to_device_usb()
+        if self._config.get("prefer_usb", False):
+            await self._connect_to_device_usb(serial=self._config.get("serial_port"))
+            if self._device is None and self._config.get("tcp_fallback", True):
+                await self._connect_to_device(self._default_host, self._default_port)    
+        else:
+            await self._connect_to_device(self._default_host, self._default_port)
 
     async def _load_rsa_signer(self):
         """
-        Loads the RSA signer needed for TCP connections. Generates a local RSA key pair if none exists.
+        Loads the RSA signer needed for ADB connections. Generates a local RSA key pair if none exists.
         """
         if self._rsa_signer is not None:
             return
