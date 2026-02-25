@@ -127,7 +127,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Tells the screen recording to close itself when possible.
         """
-        if self._is_screen_recording:
+        if getattr(self, "_is_screen_recording", False):
             self._should_stop_screen_recording = True
             self._is_screen_recording = False
 
@@ -135,7 +135,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         """
         Create the screen recording task. Will not start recording if there's already a recording.
         """
-        if self._is_screen_recording:
+        if getattr(self, "_is_screen_recording", False):
             return
 
         self._should_stop_screen_recording = False
