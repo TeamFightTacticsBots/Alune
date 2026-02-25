@@ -237,6 +237,13 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         """
         await self.set_screen_density("reset")
 
+    async def reset_screen(self):
+        """
+        Resets the screen size and density to their default values.
+        """
+        await self.reset_screen_size()
+        await self.reset_screen_density()
+
     async def get_memory(self) -> int:
         """
         Gets the memory of the device.
@@ -481,7 +488,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         self._is_screen_recording = False
 
 
-class AdbDeviceUsbAsyncShim: # pylint: disable=missing-function-docstring
+class AdbDeviceUsbAsyncShim:  # pylint: disable=missing-function-docstring
     """Async wrapper around adb_shell.adb_device.AdbDeviceUsb"""
 
     def __init__(
