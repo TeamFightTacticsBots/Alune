@@ -332,6 +332,16 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # input tap x y comes with the downtime of tapping too fast for the game sometimes,
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
         await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
+    
+    async def get_current_user(self, default_user=0) -> int:
+        shell_output = await self._wrap_shell_call("am get-current-user")
+        user = default_user
+        try:
+            user = int(shell_output)
+        except ValueError:
+            logger.warning(f"Failed to determine the current user, defaulting to {user}")
+            logger.debug(shell_output)
+        return user
 
     async def is_tft_installed(self) -> bool:
         """
@@ -340,7 +350,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._wrap_shell_call(f"pm list packages | grep {self.tft_package_name}")
+        user = await self.get_current_user()
+        shell_output = await self._wrap_shell_call(f"pm list packages --user {user} | grep {self.tft_package_name}")
         if not shell_output:
             return False
 
