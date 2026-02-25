@@ -130,7 +130,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             self._should_stop_screen_recording = True
             self._is_screen_recording = False
 
-    def create_screen_record_task(self):
+    def create_screen_record_task(self, screen_size: str):
         """
         Create the screen recording task. Will not start recording if there's already a recording.
         """
@@ -138,7 +138,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             return
 
         self._should_stop_screen_recording = False
-        asyncio.create_task(self.__screen_record())
+        asyncio.create_task(self.__screen_record(screen_size))
         atexit.register(self.mark_screen_record_for_close)
 
     async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
@@ -456,7 +456,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
 
         self._latest_frame = frames[0].to_ndarray(format="gray8").copy()  # Change to bgr24 if color is ever needed.
 
-    async def __write_frame_data(self):
+    async def __write_frame_data(self, frame_size: str):
         """
         Start a streaming shell that outputs screenrecord frame bytes and store it as a cv2 compatible image.
         """
@@ -465,14 +465,15 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
-            command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+            command=f"screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size {frame_size} -",
+            decode=False,
         ):
             if self._should_stop_screen_recording:
                 break
 
             await self.__convert_frame_to_cv2(data)
 
-    async def __screen_record(self):
+    async def __screen_record(self, screen_size: str):
         """
         Start the screen record session. Restarts itself until an external value stops it.
         """
@@ -485,7 +486,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         self._is_screen_recording = True
         while not self._should_stop_screen_recording:
             try:
-                await self.__write_frame_data()
+                await self.__write_frame_data(screen_size)
             except TcpTimeoutException:
                 logger.warning("Timed out while re-/starting screen record, waiting 5 seconds.")
                 await asyncio.sleep(5)
