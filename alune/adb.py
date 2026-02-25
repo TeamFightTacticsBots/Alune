@@ -4,14 +4,16 @@ Module for all ADB (Android Debug Bridge) related methods.
 
 import asyncio
 import atexit
+from concurrent.futures import ThreadPoolExecutor
 import os.path
 import random
-import threading
-from typing import Any, AsyncIterator, Optional
+from typing import Any, Optional
 
 from adb_shell.adb_device import AdbDeviceTcp
-from adb_shell.adb_device import AdbDeviceUsb
+from adb_shell.adb_device import UsbTransport
+from adb_shell.adb_device_async import AdbDeviceAsync
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
+from adb_shell.adb_device_async import BaseTransportAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.exceptions import TcpTimeoutException
@@ -30,6 +32,9 @@ from alune.images import ImageButton
 from alune.screen import BoundingBox
 from alune.screen import ImageSearchResult
 
+
+DEFAULT_TRANSPORT_TIMEOUT_S = 10
+DEFAULT_AUTH_TIMEOUT_S = 10
 
 # The amount of attributes is fine in my opinion.
 # We could split off screen recording into its own class, but I don't see the need to.
@@ -145,12 +150,10 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         """
         Connect to the device via TCP.
         """
-        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
-        logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
-        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
+        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=DEFAULT_TRANSPORT_TIMEOUT_S)
         logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
         try:
-            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=DEFAULT_AUTH_TIMEOUT_S)
             if connection:
                 self._device = device
                 return
@@ -170,11 +173,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         """
         Connect to the first available device via USB, or to a specific serial if provided
         """
-
-        device = AdbDeviceUsbAsyncShim(serial=serial, default_transport_timeout_s=10)
+        transport = UsbTransportAsync(serial=serial)
+        device = AdbDeviceAsync(transport, default_transport_timeout_s=DEFAULT_TRANSPORT_TIMEOUT_S)
         logger.info("Attempting to connect to ADB session over USB...")
         try:
-            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=DEFAULT_AUTH_TIMEOUT_S)
             if connection:
                 self._device = device
                 return
@@ -496,77 +499,65 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         self._is_screen_recording = False
 
 
-class AdbDeviceUsbAsyncShim:  # pylint: disable=missing-function-docstring
-    """Async wrapper around adb_shell.adb_device.AdbDeviceUsb"""
+class UsbTransportAsync(BaseTransportAsync):
+    """
+    Async transport for adb-shell USB, backed by the sync UsbTransport.
+
+    Runs all USB operations on a dedicated single thread, because UsbTransport
+    is not thread-safe.
+    """
 
     def __init__(
-        self, serial: Optional[str] = None, port_path: Any = None, default_transport_timeout_s: float | None = 10
-    ):
-        self._dev = AdbDeviceUsb(
-            serial=serial, port_path=port_path, default_transport_timeout_s=default_transport_timeout_s
-        )
-
-    @property
-    def available(self) -> bool:
-        return self._dev.available
-
-    async def connect(
-        self, rsa_keys=None, transport_timeout_s=None, auth_timeout_s: float = 10.0, read_timeout_s: float = 10.0
-    ) -> bool:
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            lambda: self._dev.connect(
-                rsa_keys=rsa_keys,
-                transport_timeout_s=transport_timeout_s,
-                auth_timeout_s=auth_timeout_s,
-                read_timeout_s=read_timeout_s,
-                auth_callback=None,
-            ),
-        )
-
-    async def close(self) -> None:
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, self._dev.close)
-
-    async def exec_out(self, command: str, decode: bool = True, **kwargs):
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, lambda: self._dev.exec_out(command, decode=decode, **kwargs))
-
-    async def streaming_shell(
         self,
-        command: str,
-        transport_timeout_s=None,
-        read_timeout_s: float = 10.0,
-        decode: bool = True,
-    ) -> AsyncIterator[bytes | str]:
-        """
-        Bridge the sync generator AdbDeviceUsb.streaming_shell() into an async generator.
-        """
+        *,
+        serial: Optional[str] = None,
+        port_path: Any = None,
+        default_transport_timeout_s: Optional[float] = None,
+    ):
+        self._serial = serial
+        self._port_path = port_path
+        self._default_transport_timeout_s = default_transport_timeout_s
+
+        self._transport: Optional[UsbTransport] = None
+        self._executor: Optional[ThreadPoolExecutor] = None
+
+    def _ensure_executor(self) -> ThreadPoolExecutor:
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="adb-usb")
+        return self._executor
+
+    async def _run(self, func, /, *args, **kwargs):
         loop = asyncio.get_running_loop()
-        q: asyncio.Queue = asyncio.Queue()
-        sentinel = object()
+        ex = self._ensure_executor()
+        return await loop.run_in_executor(ex, lambda: func(*args, **kwargs))
 
-        def worker():
-            try:
-                for item in self._dev.streaming_shell(
-                    command=command,
-                    transport_timeout_s=transport_timeout_s,
-                    read_timeout_s=read_timeout_s,
-                    decode=decode,
-                ):
-                    asyncio.run_coroutine_threadsafe(q.put(item), loop).result()
-                asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result()
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                asyncio.run_coroutine_threadsafe(q.put(e), loop).result()
-                asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result()
+    async def connect(self, transport_timeout_s):
+        # Lazily find the device in the worker thread so we don't block the event loop.
+        if self._transport is None:
+            self._transport = await self._run(
+                UsbTransport.find_adb,
+                serial=self._serial,
+                port_path=self._port_path,
+                default_transport_timeout_s=self._default_transport_timeout_s,
+            )
+        await self._run(self._transport.connect, transport_timeout_s)
 
-        threading.Thread(target=worker, daemon=True).start()
+    async def close(self):
+        if self._transport is not None:
+            await self._run(self._transport.close)
+            self._transport = None
 
-        while True:
-            item = await q.get()
-            if item is sentinel:
-                break
-            if isinstance(item, Exception):
-                raise item
-            yield item
+        # shut down the dedicated thread when closed
+        if self._executor is not None:
+            self._executor.shutdown()
+            self._executor = None
+
+    async def bulk_read(self, numbytes, transport_timeout_s):
+        if self._transport is None:
+            raise RuntimeError("USB transport not connected")
+        return await self._run(self._transport.bulk_read, numbytes, transport_timeout_s)
+
+    async def bulk_write(self, data, transport_timeout_s):
+        if self._transport is None:
+            raise RuntimeError("USB transport not connected")
+        return await self._run(self._transport.bulk_write, data, transport_timeout_s)
