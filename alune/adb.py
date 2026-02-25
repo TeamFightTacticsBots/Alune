@@ -147,17 +147,13 @@ class ADB:  # pylint: disable=too-many-instance-attributes
             self._device = None
 
         logger.warning(f"Failed to connect to ADB session with device {host}:{port}.")
-        if not retry_with_scan:
+        if not retry_with_scan or host != "localhost":
             self._device = None
             return
 
-        if "localhost" in host:
-            open_adb_port = await self.scan_localhost_devices()
-            if open_adb_port:
-                await self._connect_to_device(host, open_adb_port, retry_with_scan=False)
-        else:
-            logger.info(f"Refusing to scan ports of remote device: {host} - only localhost is supported.")
-            self._device = None
+        open_adb_port = await self.scan_localhost_devices()
+        if open_adb_port:
+            await self._connect_to_device(host, open_adb_port, retry_with_scan=False)
 
     def is_connected(self) -> bool:
         """
