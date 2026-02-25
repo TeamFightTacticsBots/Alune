@@ -15,6 +15,7 @@ readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
     "adb-shell[async]==0.4.4",
+    "adb-shell[usb]==0.4.4",
     "numpy==1.26.4",
     "opencv-python==4.10.0.84",
     "google-play-scraper==1.2.7",
