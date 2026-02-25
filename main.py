@@ -199,7 +199,7 @@ async def main():
         )
         adb_instance.mark_screen_record_for_close()
         await asyncio.sleep(1)
-        logger.warning("We will still try to reset the changes we made during preparation, no promises though.")
+        logger.warning("Attempting to reset phone changes. If this fails on a real device, please restart it.")
         await reset_phone_preconditions(adb_instance)
         await asyncio.sleep(10)
 
