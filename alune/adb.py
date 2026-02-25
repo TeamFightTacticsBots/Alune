@@ -219,18 +219,30 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         shell_output = await self._wrap_shell_call("wm density | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
-    async def set_screen_size(self):
+    async def set_screen_size(self, size="1280x720"):
         """
-        Set the screen size to 1280x720.
+        Set the screen size (defaults to 1280x720).
         """
-        await self._wrap_shell_call("wm size 1280x720")
+        await self._wrap_shell_call(f"wm size {size}")
 
-    async def set_screen_density(self):
+    async def reset_screen_size(self):
         """
-        Set the screen pixel density to 240.
+        Resets the screen size to default.
         """
-        await self._wrap_shell_call("wm density 240")
-
+        await self.set_screen_size("reset")
+        
+    async def set_screen_density(self, density="240"):
+        """
+        Set the screen pixel density (defaults to 240).
+        """
+        await self._wrap_shell_call(f"wm density {density}")
+        
+    async def reset_screen_density(self):
+        """
+        Resets the screen density to default.
+        """
+        await self.set_screen_density("reset")
+        
     async def get_memory(self) -> int:
         """
         Gets the memory of the device.

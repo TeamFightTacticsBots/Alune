@@ -95,6 +95,16 @@ async def check_phone_preconditions(adb_instance: ADB):
         await adb_instance.start_tft_app()
 
 
+async def reset_phone_preconditions(adb_instance: ADB):
+    """
+    Resets the changes made to screen size and density during preparation.
+
+    Args:
+        adb_instance: The adb instance to check the conditions on.
+    """
+    await adb_instance.reset_screen_size()
+    await adb_instance.reset_screen_density()
+    
 async def check_alune_version():
     """
     Checks the remote version against the local version and prints out a warning if remote is newer.
@@ -180,12 +190,16 @@ async def main():
         logger.info("Thanks for using Alune, see you next time!")
         adb_instance.mark_screen_record_for_close()
         await asyncio.sleep(1)
+        await reset_phone_preconditions(adb_instance)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(e)
         logger.warning(
             "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
         )
         adb_instance.mark_screen_record_for_close()
+        await asyncio.sleep(1)
+        logger.warning("We will still try to reset the changes we made during preparation, no promises though.")
+        await reset_phone_preconditions(adb_instance)
         await asyncio.sleep(10)
 
 
