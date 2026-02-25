@@ -340,7 +340,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         """
         shell_output = await self._wrap_shell_call("getprop ro.build.version.sdk")
         return int(shell_output.strip())
-        
+
     async def get_current_user(self) -> int:
         """
         Retrieves the current user from ADB.
@@ -356,7 +356,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             Whether the TFT package is in the list of the installed packages.
         """
         android_sdk = await self.get_android_sdk()
-        user_arg = ''
+        user_arg = ""
         if android_sdk >= 28:
             # pm --user is not supported in Android < 9 (SDK 28)
             user = await self.get_current_user()
