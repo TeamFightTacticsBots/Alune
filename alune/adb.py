@@ -48,7 +48,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._random = random.Random()
         self._rsa_signer = None
         self._device = None
-        self._config = config.get_adb_config()
+        self._config = config
         self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
 
@@ -65,9 +65,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Load the RSA signer and attempt to connect to a device via ADB.
         """
         await self._load_rsa_signer()
-        if self._config.get("prefer_usb", False):
-            await self._connect_to_device_usb(serial=self._config.get("serial_port"))
-            if self._device is None and self._config.get("tcp_fallback", True):
+        
+        adb_config = self._config.get_adb_config()
+        if adb_config.get("prefer_usb", False):
+            await self._connect_to_device_usb(serial=adb_config.get("serial_port"))
+            if self._device is None and adb_config.get("tcp_fallback", True):
                 await self._connect_to_device(self._default_host, self._default_port)    
         else:
             await self._connect_to_device(self._default_host, self._default_port)
