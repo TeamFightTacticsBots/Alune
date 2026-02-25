@@ -334,18 +334,19 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
         await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
 
-    async def get_current_user(self, default_user=0) -> int:
+    async def get_android_sdk(self) -> int:
         """
-        Retrieves the current user from adb
+        Retrieves the Android SDK level (e.g. 36 for Android 16).
+        """
+        shell_output = await self._wrap_shell_call("getprop ro.build.version.sdk")
+        return int(shell_output.strip())
+        
+    async def get_current_user(self) -> int:
+        """
+        Retrieves the current user from ADB.
         """
         shell_output = await self._wrap_shell_call("am get-current-user")
-        user = default_user
-        try:
-            user = int(shell_output)
-        except ValueError:
-            logger.warning(f"Failed to determine the current user, defaulting to {user}")
-            logger.debug(shell_output)
-        return user
+        return int(shell_output.strip())
 
     async def is_tft_installed(self) -> bool:
         """
@@ -354,8 +355,14 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        user = await self.get_current_user()
-        shell_output = await self._wrap_shell_call(f"pm list packages --user {user} | grep {self.tft_package_name}")
+        android_sdk = await self.get_android_sdk()
+        user_arg = ''
+        if android_sdk >= 28:
+            # pm --user is not supported in Android < 9 (SDK 28)
+            user = await self.get_current_user()
+            user_arg = f"--user {user}"
+        shell_output = await self._wrap_shell_call(f"pm list packages {user_arg} '{self.tft_package_name}'")
+
         if not shell_output:
             return False
 
