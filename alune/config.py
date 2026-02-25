@@ -73,7 +73,7 @@ class AluneConfig:
         self._sanitize_traits()
         self._sanitize_adb_connection_params()
         self._sanitize_chances()
-        
+
     def _sanitize_adb_connection_params(self):
         adb_host = self._config.get("adb_host", "localhost").strip()
         adb_port = self._config.get("adb_port", 5555)
@@ -151,7 +151,7 @@ class AluneConfig:
             The host to attempt a connection to.
         """
         return self._config.get("adb_host", "localhost")
-    
+
     def get_adb_port(self) -> int:
         """
         Get the adb port the user wants us to connect to.
