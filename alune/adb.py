@@ -71,7 +71,6 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         Load the RSA signer and attempt to connect to a device via ADB.
         """
         await self._load_rsa_signer()
-
         adb_config = self._config.get_adb_config()
         if adb_config.get("prefer_usb", False):
             await self._connect_to_device_usb(serial=adb_config.get("serial_port"))
@@ -163,7 +162,6 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             return
 
         self.mark_screen_record_for_close()
-
         # Best-effort: ask device to stop the process so the stream ends quickly
         await self.__stop_screen_record()
 
