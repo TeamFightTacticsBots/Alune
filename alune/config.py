@@ -71,16 +71,18 @@ class AluneConfig:
         self._sanitize_log_level()
         self._sanitize_game_mode()
         self._sanitize_traits()
-        self._sanitize_adb_port()
+        self._sanitize_adb_connection_params()
         self._sanitize_chances()
 
-    def _sanitize_adb_port(self):
+    def _sanitize_adb_connection_params(self):
+        adb_host = self._config.get("adb_host", "localhost").strip()
         adb_port = self._config.get("adb_port", 5555)
         try:
             adb_port = int(adb_port)
         except ValueError:
             logger.warning(f"The configured adb port '{adb_port}' is not a number. Using 5555 instead.")
             adb_port = 5555
+        self._config["adb_host"] = adb_host
         self._config["adb_port"] = adb_port
 
     def _sanitize_chances(self):
@@ -140,6 +142,15 @@ class AluneConfig:
             The configured level as a str.
         """
         return self._config["log_level"]
+
+    def get_adb_host(self) -> str:
+        """
+        Get the adb host the user wants us to connect to.
+
+        Returns:
+            The host to attempt a connection to.
+        """
+        return self._config.get("adb_host", "localhost")
 
     def get_adb_port(self) -> int:
         """
