@@ -166,8 +166,10 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
 
         if force:
             task.cancel()
-            with contextlib.suppress(asyncio.CancelledError, Exception):
+            try:
                 await task
+            except asyncio.CancelledError:
+                pass
             return
 
         try:
@@ -175,8 +177,10 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         except asyncio.TimeoutError:
             logger.warning("Screen record did not stop in time; will force-cancel.")
             task.cancel()
-            with contextlib.suppress(asyncio.CancelledError, Exception):
+            try:
                 await task
+            except asyncio.CancelledError:
+                pass
 
     async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
         """
