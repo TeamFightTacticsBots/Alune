@@ -58,8 +58,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
 
         self._video_codec = None
         self._latest_frame = None
-        self._stop_screen_record_event: Optional[asyncio.Event] = None
-        self._screen_record_task: Optional[asyncio.Task] = None
+        self._stop_screen_record_event: asyncio.Event | None = None
+        self._screen_record_task: asyncio.Task | None = None
         self._is_screen_recording = False
 
         if config.should_use_screen_record():
