@@ -168,7 +168,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             task.cancel()
             try:
                 await task
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, Exception):  # pylint: disable=broad-exception-caught
                 pass
             return
 
@@ -179,7 +179,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             task.cancel()
             try:
                 await task
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, Exception):  # pylint: disable=broad-exception-caught
                 pass
 
     async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
