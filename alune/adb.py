@@ -539,7 +539,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         self._is_screen_recording = True
 
         try:
-            await self.__stop_screen_record()  # clear leftovers
+            await self.__stop_screen_record()
             while not self._stop_screen_record_event.is_set():
                 try:
                     await self.__write_frame_data(screen_size)
