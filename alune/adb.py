@@ -567,16 +567,16 @@ class UsbTransportAsync(BaseTransportAsync):
     def __init__(
         self,
         *,
-        serial: Optional[str] = None,
-        port_path: Any = None,
-        default_transport_timeout_s: Optional[float] = None,
+        serial: str | None = None,
+        port_path: str | None = None,
+        default_transport_timeout_s: float | None = None,
     ):
         self._serial = serial
         self._port_path = port_path
         self._default_transport_timeout_s = default_transport_timeout_s
 
-        self._transport: Optional[UsbTransport] = None
-        self._executor: Optional[ThreadPoolExecutor] = None
+        self._transport: UsbTransport | None = None
+        self._executor: ThreadPoolExecutor | None = None
 
     def _ensure_executor(self) -> ThreadPoolExecutor:
         if self._executor is None:
