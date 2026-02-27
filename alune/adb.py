@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import os.path
 import random
-from typing import Any, Optional
 
 from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.adb_device import UsbTransport
