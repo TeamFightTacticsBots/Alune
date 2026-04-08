@@ -3,6 +3,7 @@ The main class for Alune, responsible for the main loop.
 """
 
 import asyncio
+import contextlib
 import importlib.metadata
 import json
 import os
@@ -21,6 +22,9 @@ from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
 from alune.tft.app import TFTApp
 
+REQUIRED_SCREEN_SIZE = "1280x720"
+REQUIRED_SCREEN_DENSITY = "240"
+
 
 async def loop_disconnect_wrapper(adb_instance: ADB, alune_config: AluneConfig):
     """
@@ -38,7 +42,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB, alune_config: AluneConfig):
         logger.warning("ADB device was disconnected, attempting one reconnect...")
         adb_instance.mark_screen_record_for_close()
         await adb_instance.load()
-        adb_instance.create_screen_record_task()
+        adb_instance.create_screen_record_task(screen_size=REQUIRED_SCREEN_SIZE)
         if not adb_instance.is_connected():
             raise_and_exit("Could not reconnect. Please check your emulator for any errors. Exiting.")
         logger.info("Reconnected to device, continuing main loop.")
@@ -54,17 +58,17 @@ async def check_phone_preconditions(adb_instance: ADB):
     """
     logger.debug("Checking screen size")
     size = await adb_instance.get_screen_size()
-    if size != "1280x720":
-        logger.info(f"Changing screen size from {size} to 1280x720.")
-        await adb_instance.set_screen_size()
+    if size != REQUIRED_SCREEN_SIZE:
+        logger.info(f"Changing screen size from {size} to {REQUIRED_SCREEN_SIZE}.")
+        await adb_instance.set_screen_size(REQUIRED_SCREEN_SIZE)
         size = await adb_instance.get_screen_size()
-        if size != "1280x720":
+        if size != REQUIRED_SCREEN_SIZE:
             raise_and_exit("Failed to change the screen size -- this may require manual intervention!")
 
     logger.debug("Checking screen density")
     density = await adb_instance.get_screen_density()
-    if density != "240":
-        logger.info(f"Changing dpi from {density} to 240.")
+    if density != REQUIRED_SCREEN_DENSITY:
+        logger.info(f"Changing dpi from {density} to {REQUIRED_SCREEN_DENSITY}.")
         await adb_instance.set_screen_density()
 
     logger.debug("Checking memory")
@@ -117,6 +121,21 @@ async def check_alune_version():
     logger.info("You are running the latest version.")
 
 
+async def handle_exit(adb_instance: ADB):
+    """
+    Method that handles the exit logic. It stops the current ADB session as it may be poisoned
+    and then attempts to start a new session in order to reset the phone size and density.
+    Finally it closes this session as well.
+    """
+    await asyncio.shield(adb_instance.close())
+
+    logger.warning("Attempting to reset phone changes. If this fails on a real device, please restart it.")
+    with contextlib.suppress(Exception):
+        await adb_instance.load()
+        await adb_instance.reset_screen()
+        await adb_instance.close()
+
+
 async def main():
     """
     Main method, loads ADB connection, checks if the phone is ready to be used and
@@ -155,7 +174,7 @@ async def main():
 
     if config.should_use_screen_record():
         logger.info("The bot will use live screen recording for image searches.")
-        adb_instance.create_screen_record_task()
+        adb_instance.create_screen_record_task(screen_size=REQUIRED_SCREEN_SIZE)
         while await adb_instance.get_screen() is None:
             logger.debug("Waiting for frame data to become available...")
             await asyncio.sleep(0.5)
@@ -177,15 +196,14 @@ async def main():
     try:
         await loop_disconnect_wrapper(adb_instance, config)
     except (KeyboardInterrupt, asyncio.CancelledError):
+        await handle_exit(adb_instance)
         logger.info("Thanks for using Alune, see you next time!")
-        adb_instance.mark_screen_record_for_close()
-        await asyncio.sleep(1)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.exception(e)
         logger.warning(
             "Due to an error, we are exiting Alune in 10 seconds. You can find all logs in alune-output/logs."
         )
-        adb_instance.mark_screen_record_for_close()
+        await handle_exit(adb_instance)
         await asyncio.sleep(10)
 
 

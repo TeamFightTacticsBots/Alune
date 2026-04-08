@@ -44,16 +44,30 @@ chances:
   # Alune will never try to buy XP when it can't.
   buy_xp: 50
 
-# Override the default ADB host and port Alune tries to connect to.
-# This is helpful if you are running TFT on a real device.
-# When running an emulator, adb_host should most likely be localhost.
-adb_host: localhost
+adb:
+  # Override the default ADB host and port Alune tries to connect to.
+  # This is helpful if you are running TFT on a real device.
+  # When running an emulator, this should most likely be localhost.
+  host: localhost
 
-# If there is no device listening on this port AND adb_host is set to localhost, a scan will happen to find your device.
-adb_port: 5555
+  # If there is no device listening on this port AND host is set to localhost, 
+  # a scan will happen to find your device.
+  port: 5555
+
+  # Prefer connecting to a physical device over USB using ADB.
+  # If true, this setting takes precedence over the TCP options above.
+  prefer_usb: false
+
+  # Device serial to use for the USB ADB connection.
+  # Only needed if multiple devices are connected.
+  # If null, the first available device is selected automatically (usually what you want).
+  serial_port: null
+
+  # If prefer_usb is true but the USB connection fails, fall back to a TCP connection.
+  tcp_fallback: true
 
 # Changing these below values manually can potentially break the bot, so don't!
 # Version of the YAML.
-version: 13
+version: 14
 # Version of the TFT set.
 set: 16

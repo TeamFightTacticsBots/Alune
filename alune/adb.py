@@ -3,12 +3,16 @@ Module for all ADB (Android Debug Bridge) related methods.
 """
 
 import asyncio
-import atexit
+from concurrent.futures import ThreadPoolExecutor
+import contextlib
 import os.path
 import random
 
 from adb_shell.adb_device import AdbDeviceTcp
+from adb_shell.adb_device import UsbTransport
+from adb_shell.adb_device_async import AdbDeviceAsync
 from adb_shell.adb_device_async import AdbDeviceTcpAsync
+from adb_shell.adb_device_async import BaseTransportAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.exceptions import TcpTimeoutException
@@ -27,13 +31,15 @@ from alune.images import ImageButton
 from alune.screen import BoundingBox
 from alune.screen import ImageSearchResult
 
+DEFAULT_TRANSPORT_TIMEOUT_S = 10
+DEFAULT_AUTH_TIMEOUT_S = 10
+
 
 # The amount of attributes is fine in my opinion.
 # We could split off screen recording into its own class, but I don't see the need to.
-class ADB:  # pylint: disable=too-many-instance-attributes
+class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-public-methods
     """
-    Class to hold the connection to an ADB connection via TCP.
-    USB connection is possible, but not supported at the moment.
+    Class to hold the connection to an ADB connection via TCP or USB.
     """
 
     def __init__(self, config: AluneConfig):
@@ -49,24 +55,32 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
 
-        if not config.should_use_screen_record():
-            return
-
-        self._video_codec = av.codec.CodecContext.create("h264", "r")
-        self._is_screen_recording = False
-        self._should_stop_screen_recording = False
+        self._video_codec = None
         self._latest_frame = None
+        self._stop_screen_record_event: asyncio.Event | None = None
+        self._screen_record_task: asyncio.Task | None = None
+        self._is_screen_recording = False
+
+        if config.should_use_screen_record():
+            self._video_codec = av.codec.CodecContext.create("h264", "r")
+            self._stop_screen_record_event = asyncio.Event()
 
     async def load(self):
         """
-        Load the RSA signer and attempt to connect to a device via ADB TCP.
+        Load the RSA signer and attempt to connect to a device via ADB.
         """
         await self._load_rsa_signer()
-        await self._connect_to_device(self._default_host, self._default_port)
+        adb_config = self._config.get_adb_config()
+        if adb_config.get("prefer_usb", False):
+            await self._connect_to_device_usb(serial=adb_config.get("serial_port"))
+            if self._device is None and adb_config.get("tcp_fallback", True):
+                await self._connect_to_device(self._default_host, self._default_port)
+        else:
+            await self._connect_to_device(self._default_host, self._default_port)
 
     async def _load_rsa_signer(self):
         """
-        Loads the RSA signer needed for TCP connections. Generates a local RSA key pair if none exists.
+        Loads the RSA signer needed for ADB connections. Generates a local RSA key pair if none exists.
         """
         if self._rsa_signer is not None:
             return
@@ -114,32 +128,68 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         return None
 
     def mark_screen_record_for_close(self):
-        """
-        Tells the screen recording to close itself when possible.
-        """
-        if self._is_screen_recording:
-            self._should_stop_screen_recording = True
-            self._is_screen_recording = False
+        """Request screen recording to stop."""
+        if self._stop_screen_record_event is None:
+            return
+        self._stop_screen_record_event.set()
 
-    def create_screen_record_task(self):
+    def create_screen_record_task(self, screen_size: str):
         """
         Create the screen recording task. Will not start recording if there's already a recording.
         """
-        if self._is_screen_recording:
+        if self._stop_screen_record_event is None:
+            return  # feature disabled
+
+        task = self._screen_record_task
+        if task is not None and not task.done():
+            return  # task is running already
+
+        self._stop_screen_record_event.clear()
+        self._screen_record_task = asyncio.create_task(self.__screen_record(screen_size), name="alune-screenrecord")
+
+    async def stop_screen_recording(self, *, force: bool = False, timeout: float = 5.0):
+        """
+        Stop the screen record task. If force=true is set, the task is immediately stopped.
+        Otherwise we wait `timeout` seconds (grace period) before forcefully ending the task.
+        The graceful ending is recommended if you wish to keep using the same ADB session.
+        """
+        if self._stop_screen_record_event is None:
             return
 
-        self._should_stop_screen_recording = False
-        asyncio.create_task(self.__screen_record())
-        atexit.register(self.mark_screen_record_for_close)
+        task = self._screen_record_task
+        if task is None or task.done():
+            return
+
+        self.mark_screen_record_for_close()
+        # Best-effort: ask device to stop the process so the stream ends quickly
+        await self.__stop_screen_record()
+
+        if force:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):  # pylint: disable=broad-exception-caught
+                pass
+            return
+
+        try:
+            await asyncio.wait_for(task, timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.warning("Screen record did not stop in time; will force-cancel.")
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):  # pylint: disable=broad-exception-caught
+                pass
 
     async def _connect_to_device(self, host: str, port: int, retry_with_scan: bool = True):
         """
         Connect to the device via TCP.
         """
-        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=10)
+        device = AdbDeviceTcpAsync(host=host, port=port, default_transport_timeout_s=DEFAULT_TRANSPORT_TIMEOUT_S)
         logger.info(f"Attempting to connect to ADB session with device {host}:{port}")
         try:
-            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=1)
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=DEFAULT_AUTH_TIMEOUT_S)
             if connection:
                 self._device = device
                 return
@@ -155,6 +205,24 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         if open_adb_port:
             await self._connect_to_device(host, open_adb_port, retry_with_scan=False)
 
+    async def _connect_to_device_usb(self, serial: str | None = None):
+        """
+        Connect to the first available device via USB, or to a specific serial if provided
+        """
+        transport = UsbTransportAsync(serial=serial, default_transport_timeout_s=DEFAULT_TRANSPORT_TIMEOUT_S)
+        device = AdbDeviceAsync(transport, default_transport_timeout_s=DEFAULT_TRANSPORT_TIMEOUT_S)
+        logger.info("Attempting to connect to ADB session over USB...")
+        try:
+            connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=DEFAULT_AUTH_TIMEOUT_S)
+            if connection:
+                self._device = device
+                return
+        except OSError:
+            self._device = None
+
+        logger.warning("Failed to connect to ADB session over USB.")
+        self._device = None
+
     def is_connected(self) -> bool:
         """
         Get if this adb instance is connected.
@@ -163,6 +231,18 @@ class ADB:  # pylint: disable=too-many-instance-attributes
              True if a device exists and is available. Otherwise, False.
         """
         return self._device is not None and self._device.available
+
+    async def close(self):
+        """
+        Terminates any running screenrecord tasks and finally the ADB session itself.
+        """
+        if self._screen_record_task is not None:
+            with contextlib.suppress(Exception):
+                await self.stop_screen_recording(force=True)
+
+        if self._device is not None:
+            await self._device.close()
+            self._device = None
 
     async def get_screen_size(self) -> str:
         """
@@ -184,17 +264,36 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         shell_output = await self._wrap_shell_call("wm density | awk 'END{print $3}'")
         return shell_output.replace("\n", "")
 
-    async def set_screen_size(self):
+    async def set_screen_size(self, size="1280x720"):
         """
-        Set the screen size to 1280x720.
+        Set the screen size (defaults to 1280x720).
         """
-        await self._wrap_shell_call("wm size 1280x720")
+        await self._wrap_shell_call(f"wm size {size}")
 
-    async def set_screen_density(self):
+    async def reset_screen_size(self):
         """
-        Set the screen pixel density to 240.
+        Resets the screen size to default.
         """
-        await self._wrap_shell_call("wm density 240")
+        await self.set_screen_size("reset")
+
+    async def set_screen_density(self, density="240"):
+        """
+        Set the screen pixel density (defaults to 240).
+        """
+        await self._wrap_shell_call(f"wm density {density}")
+
+    async def reset_screen_density(self):
+        """
+        Resets the screen density to default.
+        """
+        await self.set_screen_density("reset")
+
+    async def reset_screen(self):
+        """
+        Resets the screen size and density to their default values.
+        """
+        await self.reset_screen_size()
+        await self.reset_screen_density()
 
     async def get_memory(self) -> int:
         """
@@ -286,6 +385,20 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # so we swipe on the same coordinate to simulate a longer press with a random duration.
         await self._wrap_shell_call(f"input swipe {x} {y} {x} {y} {self._random.randint(60, 120)}")
 
+    async def get_android_sdk(self) -> int:
+        """
+        Retrieves the Android SDK level (e.g. 36 for Android 16).
+        """
+        shell_output = await self._wrap_shell_call("getprop ro.build.version.sdk")
+        return int(shell_output.strip())
+
+    async def get_current_user(self) -> int:
+        """
+        Retrieves the current user from ADB.
+        """
+        shell_output = await self._wrap_shell_call("am get-current-user")
+        return int(shell_output.strip())
+
     async def is_tft_installed(self) -> bool:
         """
         Check if TFT is installed on the device using the package manager (pm).
@@ -293,7 +406,14 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         Returns:
             Whether the TFT package is in the list of the installed packages.
         """
-        shell_output = await self._wrap_shell_call(f"pm list packages | grep {self.tft_package_name}")
+        android_sdk = await self.get_android_sdk()
+        user_arg = ""
+        if android_sdk >= 28:
+            # pm --user is not supported in Android < 9 (SDK 28)
+            user = await self.get_current_user()
+            user_arg = f"--user {user}"
+        shell_output = await self._wrap_shell_call(f"pm list packages {user_arg} '{self.tft_package_name}'")
+
         if not shell_output:
             return False
 
@@ -387,7 +507,7 @@ class ADB:  # pylint: disable=too-many-instance-attributes
 
         self._latest_frame = frames[0].to_ndarray(format="gray8").copy()  # Change to bgr24 if color is ever needed.
 
-    async def __write_frame_data(self):
+    async def __write_frame_data(self, frame_size: str):
         """
         Start a streaming shell that outputs screenrecord frame bytes and store it as a cv2 compatible image.
         """
@@ -396,31 +516,109 @@ class ADB:  # pylint: disable=too-many-instance-attributes
         # bit-rate 16M > 16_000_000 Mbps, could probably be lowered or made configurable, but works well.
         # - at the end makes screenrecord output to console, if format is h264.
         async for data in self._device.streaming_shell(
-            command="screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size 1280x720 -", decode=False
+            command=f"screenrecord --time-limit 8 --output-format h264 --bit-rate 16M --size {frame_size} -",
+            decode=False,
         ):
-            if self._should_stop_screen_recording:
+            if self._stop_screen_record_event.is_set():
                 break
 
             await self.__convert_frame_to_cv2(data)
 
-    async def __screen_record(self):
+    async def __stop_screen_record(self):
+        """
+        Best-effort kill screenrecord
+        """
+        if self.is_connected():
+            with contextlib.suppress(Exception):
+                await self._device.exec_out("pkill -2 screenrecord")
+
+    async def __screen_record(self, screen_size: str):
         """
         Start the screen record session. Restarts itself until an external value stops it.
         """
         if self._is_screen_recording:
             return
 
-        await self._device.exec_out("pkill -2 screenrecord")
         logger.debug("Screen record starting.")
-
         self._is_screen_recording = True
-        while not self._should_stop_screen_recording:
-            try:
-                await self.__write_frame_data()
-            except TcpTimeoutException:
-                logger.warning("Timed out while re-/starting screen record, waiting 5 seconds.")
-                await asyncio.sleep(5)
 
-        logger.debug("Screen record stopped.")
-        await self._device.exec_out("pkill -2 screenrecord")
-        self._is_screen_recording = False
+        try:
+            await self.__stop_screen_record()
+            while not self._stop_screen_record_event.is_set():
+                try:
+                    await self.__write_frame_data(screen_size)
+                except TcpTimeoutException:
+                    if self._stop_screen_record_event.is_set():
+                        break
+                    logger.warning("Timed out while re-/starting screen record, waiting 5 seconds.")
+                    await asyncio.sleep(5)
+        finally:
+            logger.debug("Screen record stopped.")
+            with contextlib.suppress(Exception):
+                await self.__stop_screen_record()
+            self._is_screen_recording = False
+            self._screen_record_task = None
+
+
+class UsbTransportAsync(BaseTransportAsync):
+    """
+    Async transport for adb-shell USB, backed by the sync UsbTransport.
+
+    Runs all USB operations on a dedicated single thread, because UsbTransport
+    is not thread-safe.
+    """
+
+    def __init__(
+        self,
+        *,
+        serial: str | None = None,
+        port_path: str | None = None,
+        default_transport_timeout_s: float | None = None,
+    ):
+        self._serial = serial
+        self._port_path = port_path
+        self._default_transport_timeout_s = default_transport_timeout_s
+
+        self._transport: UsbTransport | None = None
+        self._executor: ThreadPoolExecutor | None = None
+
+    def _ensure_executor(self) -> ThreadPoolExecutor:
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="adb-usb")
+        return self._executor
+
+    async def _run(self, func, /, *args, **kwargs):
+        loop = asyncio.get_running_loop()
+        ex = self._ensure_executor()
+        return await loop.run_in_executor(ex, lambda: func(*args, **kwargs))
+
+    async def connect(self, transport_timeout_s):
+        # Lazily find the device in the worker thread so we don't block the event loop.
+        if self._transport is None:
+            self._transport = await self._run(
+                UsbTransport.find_adb,
+                serial=self._serial,
+                port_path=self._port_path,
+                default_transport_timeout_s=self._default_transport_timeout_s,
+            )
+        await self._run(self._transport.connect, transport_timeout_s)
+
+    async def close(self):
+        if self._transport is not None:
+            await self._run(self._transport.close)
+            self._transport = None
+
+        # shut down the dedicated thread when closed
+        if self._executor is not None:
+            self._executor.shutdown()
+            self._executor = None
+
+    async def bulk_read(self, numbytes, transport_timeout_s):
+        if self._transport is None:
+            raise RuntimeError("USB transport not connected")
+        return await self._run(self._transport.bulk_read, numbytes, transport_timeout_s)
+
+    async def bulk_write(self, data, transport_timeout_s):
+        if self._transport is None:
+            raise RuntimeError("USB transport not connected")
+        return await self._run(self._transport.bulk_write, data, transport_timeout_s)
