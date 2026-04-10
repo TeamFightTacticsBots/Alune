@@ -13,10 +13,12 @@ from urllib.error import URLError
 import urllib.request
 
 from adb_shell.exceptions import TcpTimeoutException
+from adb_shell.exceptions import UsbReadFailedError
+from adb_shell.exceptions import UsbWriteFailedError
 import google_play_scraper
 from loguru import logger
 
-from alune import helpers
+from alune import helpers, screen
 from alune.adb import ADB
 from alune.config import AluneConfig
 from alune.helpers import raise_and_exit
@@ -38,7 +40,7 @@ async def loop_disconnect_wrapper(adb_instance: ADB, alune_config: AluneConfig):
     tft_app = TFTApp(adb_instance, alune_config)
     try:
         await tft_app.loop()
-    except TcpTimeoutException:
+    except (TcpTimeoutException, UsbReadFailedError, UsbWriteFailedError):
         logger.warning("ADB device was disconnected, attempting one reconnect...")
         adb_instance.mark_screen_record_for_close()
         await adb_instance.load()
@@ -77,6 +79,7 @@ async def check_phone_preconditions(adb_instance: ADB):
 
     logger.debug("Checking if TFT is installed")
     if not await adb_instance.is_tft_installed():
+        await adb_instance.reset_device()
         raise_and_exit("TFT is not installed, please install it to continue. Exiting.")
 
     logger.debug("Checking TFT app version")
@@ -91,6 +94,7 @@ async def check_phone_preconditions(adb_instance: ADB):
         play_store_version = installed_version
 
     if helpers.is_version_string_newer(play_store_version, installed_version, ignore_minor_mismatch=True):
+        await adb_instance.reset_device()
         raise_and_exit("A new major version of the TFT app is available. An update is required.")
 
     logger.debug("Checking if TFT is active")
@@ -132,7 +136,7 @@ async def handle_exit(adb_instance: ADB):
     logger.warning("Attempting to reset phone changes. If this fails on a real device, please restart it.")
     with contextlib.suppress(Exception):
         await adb_instance.load()
-        await adb_instance.reset_screen()
+        await adb_instance.reset_device()
         await adb_instance.close()
 
 
@@ -168,6 +172,11 @@ async def main():
     if not adb_instance.is_connected():
         logger.error("There is no ADB device ready. Exiting.")
         return
+
+    if adb_instance.is_usb:
+        logger.info("USB device is connected, lowering image match precision.")
+        screen.DEFAULT_PRECISION = 0.75
+        await adb_instance.enable_stay_awake()
 
     logger.debug("ADB is connected, checking phone and app details")
     await check_phone_preconditions(adb_instance)
