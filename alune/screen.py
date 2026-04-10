@@ -18,6 +18,8 @@ from alune.images import BoundingBox
 from alune.images import Coordinate
 from alune.images import ImageButton
 
+DEFAULT_PRECISION = 0.8
+
 # libpng warnings that are safe to ignore (cosmetic metadata issues, not actual image problems)
 _IGNORABLE_STDERR_PATTERNS = [
     "libpng warning:",
@@ -80,7 +82,7 @@ class ImageSearchResult(Coordinate):
 def get_button_on_screen(
     image: ndarray,
     button: ImageButton,
-    precision: float = 0.8,
+    precision: float | None = None,
 ) -> ImageSearchResult | None:
     """
     Check if a given image is detected on screen in a specific window's area.
@@ -93,7 +95,9 @@ def get_button_on_screen(
     Returns:
         The position of the image and it's width and height or None if it wasn't found
     """
-    return get_on_screen(image, button.image_path, button.capture_area, precision)
+    return get_on_screen(
+        image, button.image_path, button.capture_area, precision if precision is not None else DEFAULT_PRECISION
+    )
 
 
 def get_image_from_path(path: str) -> MatLike | None:
@@ -147,7 +151,7 @@ def get_on_screen(
     image: ndarray,
     path: str,
     bounding_box: BoundingBox | None = None,
-    precision: float = 0.8,
+    precision: float | None = None,
 ) -> ImageSearchResult | None:
     """
     Check if a given image is detected on screen in a specific window's area.
@@ -162,6 +166,9 @@ def get_on_screen(
     Returns:
         The position of the image and it's width and height or None if it wasn't found
     """
+    if precision is None:
+        precision = DEFAULT_PRECISION
+
     image_to_find = get_image_from_path(path)
     if image_to_find is None:
         return None

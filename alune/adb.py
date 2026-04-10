@@ -16,6 +16,9 @@ from adb_shell.adb_device_async import BaseTransportAsync
 from adb_shell.auth.keygen import keygen
 from adb_shell.auth.sign_pythonrsa import PythonRSASigner
 from adb_shell.exceptions import TcpTimeoutException
+from adb_shell.exceptions import UsbDeviceNotFoundError
+from adb_shell.exceptions import UsbReadFailedError
+from adb_shell.exceptions import UsbWriteFailedError
 import av
 from av.error import InvalidDataError  # pylint: disable=no-name-in-module
 import cv2
@@ -23,6 +26,7 @@ from loguru import logger
 import numpy
 from numpy import ndarray
 import psutil
+import usb1
 
 from alune import helpers
 from alune.config import AluneConfig
@@ -54,7 +58,8 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         self._config = config
         self._default_host = config.get_adb_host()
         self._default_port = config.get_adb_port()
-
+        self._is_usb = False
+        self._original_stay_on: str | None = None
         self._video_codec = None
         self._latest_frame = None
         self._stop_screen_record_event: asyncio.Event | None = None
@@ -216,12 +221,40 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
             connection = await device.connect(rsa_keys=[self._rsa_signer], auth_timeout_s=DEFAULT_AUTH_TIMEOUT_S)
             if connection:
                 self._device = device
+                self._is_usb = True
                 return
+        except usb1.USBError:
+            logger.warning(
+                "USB device is busy. Close any application that uses ADB (e.g. Android Studio), "
+                'or try running "adb kill-server" and try again.'
+            )
+            self._device = None
+            return
+        except UsbDeviceNotFoundError:
+            logger.warning("No USB device found. Make sure the device is plugged in and USB debugging is enabled.")
+            self._device = None
+            return
+        except (UsbReadFailedError, UsbWriteFailedError):
+            logger.warning(
+                "USB communication failed. Check cable connection and approve the USB debugging prompt if shown."
+            )
+            self._device = None
+            return
         except OSError:
             self._device = None
 
         logger.warning("Failed to connect to ADB session over USB.")
         self._device = None
+
+    @property
+    def is_usb(self) -> bool:
+        """
+        Get if this adb instance is connected over USB.
+
+        Returns:
+            True if the device is connected over USB. Otherwise, False.
+        """
+        return self._is_usb
 
     def is_connected(self) -> bool:
         """
@@ -231,6 +264,37 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
              True if a device exists and is available. Otherwise, False.
         """
         return self._device is not None and self._device.available
+
+    async def enable_stay_awake(self):
+        """
+        Keep the screen on while USB is plugged in.
+        Saves the original value so it can be restored later.
+        """
+        raw = await self._wrap_shell_call("settings get global stay_on_while_plugged_in")
+        original = raw.strip()
+        self._original_stay_on = original
+
+        try:
+            current = int(original)
+        except ValueError:
+            current = 0
+
+        # Bit 1 = AC, bit 2 = USB, bit 4 = wireless.
+        desired = current | 2
+        if desired != current:
+            await self._wrap_shell_call(f"settings put global stay_on_while_plugged_in {desired}")
+            logger.info("Enabled stay-awake while USB is plugged in.")
+
+    async def restore_stay_awake(self):
+        """
+        Restore the stay_on_while_plugged_in setting to its original value.
+        """
+        if self._original_stay_on is None:
+            return
+
+        await self._wrap_shell_call(f"settings put global stay_on_while_plugged_in {self._original_stay_on}")
+        logger.info("Restored original stay-awake setting.")
+        self._original_stay_on = None
 
     async def close(self):
         """
@@ -288,10 +352,11 @@ class ADB:  # pylint: disable=too-many-instance-attributes disable=too-many-publ
         """
         await self.set_screen_density("reset")
 
-    async def reset_screen(self):
+    async def reset_device(self):
         """
         Resets the screen size and density to their default values.
         """
+        await self.restore_stay_awake()
         await self.reset_screen_size()
         await self.reset_screen_density()
 

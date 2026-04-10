@@ -100,13 +100,14 @@ class TFTGame:
         Checks the shop for traits and purchases it if found.
         """
         screenshot = await self.adb.get_screen()
+        precision = 0.8 if self.adb.is_usb else 0.9
         logger.debug("Buying from shop")
         for trait in self.config.get_traits():
             search_results = screen.get_all_on_screen(
                 image=screenshot,
                 path=trait,
                 bounding_box=BoundingBox(170, 110, 1250, 230),
-                precision=0.9,
+                precision=precision,
             )
             if len(search_results) == 0:
                 logger.debug(f"No card in the shop has the trait {trait.name}.")
@@ -145,14 +146,15 @@ class TFTGame:
 
         await self.handle_augments(screenshot)
 
-        is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden, precision=0.9)
+        precision = 0.85 if self.adb.is_usb else 0.9
+        is_choose_one_hidden = screen.get_button_on_screen(screenshot, Button.choose_one_hidden, precision=precision)
         if is_choose_one_hidden:
             logger.debug("Choose one is hidden, clicking it to show offers")
             await self.adb.click_button(Button.choose_one_hidden)
             await asyncio.sleep(2)
             screenshot = await self.adb.get_screen()
 
-        is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one, precision=0.9)
+        is_choose_one_active = screen.get_button_on_screen(screenshot, Button.choose_one, precision=precision)
         if is_choose_one_active:
             logger.debug("Choosing from an item or a choice offer")
             await self.adb.click_button(Button.choose_one)

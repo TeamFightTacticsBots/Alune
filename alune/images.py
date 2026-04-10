@@ -254,10 +254,13 @@ class Button:
     accept = ImageButton(BoundingBox(525, 520, 755, 545))
     exit_queue = ImageButton(BoundingBox(800, 610, 870, 680))
     exit_now = ImageButton(
-        click_box=BoundingBox(550, 425, 740, 440),
-        capture_area=BoundingBox(520, 400, 775, 425),
+        click_box=BoundingBox(550, 425, 740, 455),
+        capture_area=BoundingBox(520, 400, 775, 460),
     )
-    check = ImageButton(BoundingBox(555, 425, 725, 470))
+    check = ImageButton(
+        click_box=BoundingBox(555, 425, 725, 470),
+        capture_area=BoundingBox(500, 370, 780, 500),
+    )
     check_surrender = ImageButton(BoundingBox(650, 420, 825, 470))
     check_choice = ImageButton(BoundingBox(655, 423, 829, 472))
     buy_xp = ImageButton(

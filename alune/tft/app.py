@@ -172,16 +172,8 @@ class TFTApp:
         if screen.get_on_screen(screenshot, Image.RITO_LOGO):
             return GameStateImageResult(GameState.LOADING)
 
-        if screen.get_on_screen(screenshot, Button.play.image_path) and not screen.get_on_screen(
-            screenshot, Image.BACK
-        ):
-            return GameStateImageResult(GameState.MAIN_MENU)
-
         if image_result := screen.get_on_screen(screenshot, Image.NORMAL_GAME):
             return GameStateImageResult(game_state=GameState.CHOOSE_MODE, image_result=image_result)
-
-        if screen.get_button_on_screen(screenshot, Button.check):
-            return GameStateImageResult(GameState.QUEUE_MISSED)
 
         if (
             screen.get_on_screen(screenshot, Image.INVITE_FRIENDS)
@@ -196,6 +188,12 @@ class TFTApp:
             and screen.get_on_screen(screenshot, Image.CANCEL_QUEUE)
         ):
             return GameStateImageResult(GameState.IN_QUEUE)
+
+        if screen.get_button_on_screen(screenshot, Button.check):
+            return GameStateImageResult(GameState.QUEUE_MISSED)
+
+        if screen.get_button_on_screen(screenshot, Button.play) and not screen.get_on_screen(screenshot, Image.BACK):
+            return GameStateImageResult(GameState.MAIN_MENU)
 
         if screen.get_on_screen(screenshot, Image.COMPOSITION) or screen.get_on_screen(screenshot, Image.ITEMS):
             return GameStateImageResult(GameState.IN_GAME)
