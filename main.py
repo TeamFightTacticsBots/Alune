@@ -18,7 +18,8 @@ from adb_shell.exceptions import UsbWriteFailedError
 import google_play_scraper
 from loguru import logger
 
-from alune import helpers, screen
+from alune import helpers
+from alune import screen
 from alune.adb import ADB
 from alune.config import AluneConfig
 from alune.helpers import raise_and_exit

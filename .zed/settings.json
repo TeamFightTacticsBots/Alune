@@ -1,0 +1,38 @@
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["pyright", "ruff"],
+      "formatter": {
+        "external": {
+          "command": "alune-venv/bin/black",
+          "arguments": ["-"]
+        }
+      },
+      "format_on_save": "on"
+    }
+  },
+  "lsp": {
+    "pyright": {
+      "settings": {
+        "python": {
+          "pythonPath": "alune-venv/bin/python"
+        }
+      }
+    },
+    "ruff": {
+      "settings": {
+        "path": "alune-venv/bin/python"
+      },
+      "initialization_options": {
+        "settings": {
+          "interpreter": ["alune-venv/bin/python"],
+          "lineLength": 120,
+          "lint": {
+            "enable": true,
+            "select": ["E", "F", "W", "I"]
+          }
+        }
+      }
+    }
+  }
+}
