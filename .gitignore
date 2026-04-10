@@ -1,5 +1,7 @@
 # Editor files
 .idea/
+.vscode/
+.zed/
 
 # Environments
 *venv/

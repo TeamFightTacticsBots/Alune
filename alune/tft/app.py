@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from enum import auto
 from enum import StrEnum
 
-import keyboard
 from loguru import logger
 from numpy import ndarray
+from pynput import keyboard
 
 from alune import screen
 from alune.adb import ADB
@@ -272,5 +272,15 @@ class TFTApp:
         """
         Setup hotkey listeners
         """
-        keyboard.add_hotkey("alt+p", self.toggle_pause)
-        keyboard.add_hotkey("alt+n", self.toggle_play_next_game)
+        self._hotkeys = keyboard.GlobalHotKeys(
+            {
+                "<alt>+p": self.toggle_pause,
+                "<alt>+n": self.toggle_play_next_game,
+            }
+        )
+        self._hotkeys.start()
+        logger.info(
+            "Hotkeys:\
+            \n\t<alt> + p\t-\tToggle the bot pausing all actions\
+            \n\t<alt> + n\t-\tToggle the bot re-queueing after a game"
+        )
