@@ -22,3 +22,7 @@ alune-output/
 
 # Dev tooling
 CLAUDE.md
+
+# Local capture/extraction scratch files
+/tmp/
+
