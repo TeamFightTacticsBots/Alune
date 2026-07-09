@@ -167,32 +167,32 @@ class Trait(StrEnum):
         Returns:
             A list of the traits to be played by default, if the user misconfigures.
         """
-        return [cls.MECHA, cls.BRAWLER]
+        return [cls.VANGUARD, cls.SNIPER]
 
-    ANIMA = auto()
+    # ANIMA = auto()  # TODO: capture real mobile shop trait icon
     ARBITER = auto()
     BASTION = auto()
     BRAWLER = auto()
-    BULWARK = auto()
+    # BULWARK = auto()  # TODO: capture real mobile shop trait icon
     CHALLENGER = auto()
     CHOOSE_TRAIT = auto()
-    COMMANDER = auto()
+    # COMMANDER = auto()  # TODO: capture real mobile shop trait icon
     CONDUIT = auto()
     DARK_LADY = auto()
     DARK_STAR = auto()
-    DIVINE_DUELIST = auto()
-    DOOMER = auto()
-    ERADICATOR = auto()
-    FACTORY_NEW = auto()
+    # DIVINE_DUELIST = auto()  # TODO: capture real mobile shop trait icon
+    # DOOMER = auto()  # TODO: capture real mobile shop trait icon
+    # ERADICATOR = auto()  # TODO: capture real mobile shop trait icon
+    # FACTORY_NEW = auto()  # TODO: capture real mobile shop trait icon
     FATEWEAVER = auto()
-    GALAXY_HUNTER = auto()
+    # GALAXY_HUNTER = auto()  # TODO: capture real mobile shop trait icon
     GUN_GODDESS = auto()
     MARAUDER = auto()
     MECHA = auto()
     MEEPLE = auto()
     N_O_V_A = auto()
     ORACLE = auto()
-    PARTY_ANIMAL = auto()
+    # PARTY_ANIMAL = auto()  # TODO: capture real mobile shop trait icon
     PRIMORDIAN = auto()
     PSIONIC = auto()
     REDEEMER = auto()

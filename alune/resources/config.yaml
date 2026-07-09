@@ -17,8 +17,8 @@ queue_timeout: 150
 # For example: admin, star_guardian, mecha_prime, lasercorps
 # For a full list of valid traits, visit https://github.com/TeamFightTacticsBots/Alune/blob/main/alune/images.py
 traits:
-  - mecha
-  - brawler
+  - vanguard
+  - sniper
 
 # Determines whether the bot should surrender as soon as possible (after round 3-1)
 # Valid values : true, false
