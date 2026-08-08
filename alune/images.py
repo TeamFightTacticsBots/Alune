@@ -169,7 +169,7 @@ class Trait(StrEnum):
         """
         return [cls.VANGUARD, cls.SNIPER]
 
-    # ANIMA = auto()  # TODO: capture real mobile shop trait icon
+    ANIMA = auto()
     ARBITER = auto()
     BASTION = auto()
     BRAWLER = auto()
