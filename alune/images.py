@@ -146,6 +146,7 @@ class Image(StrEnum):
     COLLAPSE_TOP_BAR = auto()
     PHASE_3_2_FULL = auto()
     NORMAL_GAME = auto()
+    OPENGL_UPDATE_NOTICE = auto()
 
 
 class Trait(StrEnum):
@@ -270,6 +271,7 @@ class Button:
     )
     check_surrender = ImageButton(BoundingBox(650, 420, 825, 470))
     check_choice = ImageButton(BoundingBox(655, 423, 829, 472))
+    opengl_update_ok = ClickButton(BoundingBox(550, 420, 730, 476))
     buy_xp = ImageButton(
         click_box=BoundingBox(35, 593, 124, 682),
         capture_area=BoundingBox(9, 550, 170, 708),
