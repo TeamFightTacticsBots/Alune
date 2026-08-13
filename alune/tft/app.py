@@ -279,8 +279,6 @@ class TFTApp:
             }
         )
         self._hotkeys.start()
-        logger.info(
-            "Hotkeys:\
+        logger.info("Hotkeys:\
             \n\t<alt> + p\t-\tToggle the bot pausing all actions\
-            \n\t<alt> + n\t-\tToggle the bot re-queueing after a game"
-        )
+            \n\t<alt> + n\t-\tToggle the bot re-queueing after a game")

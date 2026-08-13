@@ -205,7 +205,7 @@ def get_all_matches_without_duplicates(
     Returns:
         A list of rectangle coordinates of all matches without duplicates.
     """
-    (y_coordinates, x_coordinates) = numpy.where(search_result >= precision)
+    y_coordinates, x_coordinates = numpy.where(search_result >= precision)
     to_find_height, to_find_width = image_to_find.shape[:2]
     matches = []
 
