@@ -121,8 +121,6 @@ class TFTApp:
             case GameState.OPENGL_UPDATE_NOTICE:
                 logger.info("Dismissing TFT's OpenGL-update notice.")
                 await self.adb.click_button(Button.opengl_update_ok)
-                # Give the app time to remove the modal before normal state detection resumes.
-                await asyncio.sleep(2)
             case GameState.CHOOSE_MODE:
                 logger.info(f"App state is choose mode, selecting {self.config.get_game_mode()}.")
                 await self.adb.click_image(game_state_image_result.image_result)
@@ -175,8 +173,6 @@ class TFTApp:
         if screen.get_button_on_screen(screenshot, Button.check_choice):
             return GameStateImageResult(GameState.CHOICE_CONFIRM)
 
-        # Some emulator device profiles receive this one-time notice after TFT starts.
-        # Check it before normal states so its OK action cannot be mistaken for another dialog.
         if screen.get_on_screen(screenshot, Image.OPENGL_UPDATE_NOTICE):
             return GameStateImageResult(GameState.OPENGL_UPDATE_NOTICE)
 
